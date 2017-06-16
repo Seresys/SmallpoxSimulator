@@ -382,6 +382,7 @@ to airport-setup [airportName x y]
   set shape "star"
   set color grey
   set size 3
+  create-airways-with other airports [ hide-link ]
 end
 
 to port-setup [portName x y]
@@ -536,6 +537,40 @@ allow-water-traffic
 0
 1
 -1000
+
+BUTTON
+23
+433
+163
+466
+Hide/Show Airways
+ask airways [set hidden? not hidden?]
+NIL
+1
+T
+OBSERVER
+NIL
+NIL
+NIL
+NIL
+1
+
+BUTTON
+23
+394
+180
+427
+Hide/Show Waterways
+ask waterways [set hidden? not hidden?]
+NIL
+1
+T
+OBSERVER
+NIL
+NIL
+NIL
+NIL
+1
 
 @#$#@#$#@
 ## WHAT IS IT?
