@@ -11,6 +11,10 @@ globals [
 ]
 
 breed [airports airport]
+breed [ports port]
+
+undirected-link-breed [ airways airway ]
+undirected-link-breed [ waterways waterway ]
 
 to start
   clear-turtles
@@ -18,6 +22,7 @@ to start
   sea-setup
   ground-setup
   airports-setup
+  ports-setup
 end
 
 to sea-setup
@@ -91,15 +96,45 @@ to airports-setup
   create-airports 1 [ airport-setup "Vienne" 144 -27 ]
   create-airports 1 [ airport-setup "Jeddah" 162 -52 ]
   create-airports 1 [ airport-setup "Los Angeles" 39 -42 ]
+end
 
+to ports-setup
+  create-ports 1 [ port-setup "Vancouver" 41 -24 ]
+  create-ports 1 [ port-setup "Montréal" 76 -28 ]
+  create-ports 1 [ port-setup "Valparaiso" 75 -104 ]
+  create-ports 1 [ port-setup "Vigo" 125 -32 ]
+  create-ports 1 [ port-setup "Rotterdam" 135 -24 ]
+  create-ports 1 [ port-setup "Kobe" 235 -41 ]
+  create-ports 1 [ port-setup "Halifax" 85 -30 ]
+  create-ports 1 [ port-setup "Houston" 54 -45 ]
+  create-ports 1 [ port-setup "Los Angeles" 39 -42 ]
+  create-ports 1 [ port-setup "Singapour" 216 -71 ]
+  create-ports 1 [ port-setup "South Louisiana" 61 -44 ]
+  create-ports 1 [ port-setup "Charleston" 66 -42 ]
+  create-ports 1 [ port-setup "Durban" 156 -97 ]
+  create-ports 1 [ port-setup "Dubai" 174 -50 ]
+  create-ports 1 [ port-setup "Seattle" 41 -30 ]
+  create-ports 1 [ port-setup "Le Pirée" 149 -37 ]
+  create-ports 1 [ port-setup "Erdemir" 156 -34 ]
+  create-ports 1 [ port-setup "Mundra" 187 -52 ]
 end
 
 to airport-setup [airportName x y]
   set xcor x
   set ycor y
   set name airportName
-  set shape "star"
+  set shape "square"
   set color grey
+  set size 3
+  create-airways-with other airports [ hide-link ]
+end
+
+to port-setup [portName x y]
+  set xcor x
+  set ycor y
+  set name portName
+  set shape "triangle"
+  set color red
   set size 3
 end
 @#$#@#$#@
@@ -137,6 +172,23 @@ BUTTON
 512
 Start
 start
+NIL
+1
+T
+OBSERVER
+NIL
+NIL
+NIL
+NIL
+1
+
+BUTTON
+22
+436
+160
+469
+Hide/Show Airways
+ask airways [ set hidden? not hidden? ]
 NIL
 1
 T
