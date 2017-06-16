@@ -1,3 +1,11 @@
+breed [airports airport]
+breed [ports port]
+breed [planes plane]
+breed [boats boat]
+
+undirected-link-breed [ airways airway ]
+undirected-link-breed [ waterways waterway ]
+
 turtles-own [
   name
 ]
@@ -10,11 +18,9 @@ globals [
 
 ]
 
-breed [airports airport]
-breed [ports port]
+planes-own [
 
-undirected-link-breed [ airways airway ]
-undirected-link-breed [ waterways waterway ]
+]
 
 to start
   clear-turtles
@@ -23,10 +29,10 @@ to start
   ground-setup
   airports-setup
   ports-setup
+  planes-setup
 end
 
 to sea-setup
-  import-pcolors "worldmap_background.png"
   ask patches [set pcolor blue]
   ask patches [set ground false]
 end
@@ -39,6 +45,36 @@ to ground-setup
       set ground true
     ]
   ]
+end
+
+to airport-setup [airportName x y]
+  set xcor x
+  set ycor y
+  set name airportName
+  set shape "square"
+  set color grey
+  set size 3
+  create-airways-with other airports [ hide-link ]
+end
+
+to port-setup [portName x y]
+  set xcor x
+  set ycor y
+  set name portName
+  set shape "triangle"
+  set color black
+  set size 3
+  create-waterways-with other ports [ hide-link ]
+end
+
+to planes-setup
+  create-planes plane-max-number [ plane-setup ]
+end
+
+to plane-setup
+  ;;set shape "plane"
+  set color grey
+  set size 3
 end
 
 to airports-setup
@@ -75,7 +111,7 @@ to airports-setup
   create-airports 1 [ airport-setup "Melbourne" 242 -108 ]
   create-airports 1 [ airport-setup "Brisbane" 252 -97 ]
   create-airports 1 [ airport-setup "Bali" 226 -80 ]
-  create-airports 1 [ airport-setup "Singapour" 216 -71 ]
+  create-airports 1 [ airport-setup "Singapour" 223 -74 ]
   create-airports 1 [ airport-setup "Bangkok" 213 -60 ]
   create-airports 1 [ airport-setup "Los Angeles" 39 -42 ]
   create-airports 1 [ airport-setup "Manille" 229 -59 ]
@@ -95,7 +131,7 @@ to airports-setup
   create-airports 1 [ airport-setup "Bogota" 71 -70 ]
   create-airports 1 [ airport-setup "Vienne" 144 -27 ]
   create-airports 1 [ airport-setup "Jeddah" 162 -52 ]
-  create-airports 1 [ airport-setup "Los Angeles" 39 -42 ]
+
 end
 
 to ports-setup
@@ -108,7 +144,7 @@ to ports-setup
   create-ports 1 [ port-setup "Halifax" 85 -30 ]
   create-ports 1 [ port-setup "Houston" 54 -45 ]
   create-ports 1 [ port-setup "Los Angeles" 39 -42 ]
-  create-ports 1 [ port-setup "Singapour" 216 -71 ]
+  create-ports 1 [ port-setup "Singapour" 223 -74 ]
   create-ports 1 [ port-setup "South Louisiana" 61 -44 ]
   create-ports 1 [ port-setup "Charleston" 66 -42 ]
   create-ports 1 [ port-setup "Durban" 156 -97 ]
@@ -117,26 +153,43 @@ to ports-setup
   create-ports 1 [ port-setup "Le Pirée" 149 -37 ]
   create-ports 1 [ port-setup "Erdemir" 156 -34 ]
   create-ports 1 [ port-setup "Mundra" 187 -52 ]
+  create-ports 1 [ port-setup "Kaoshsiunj" 227 -51 ]
+  create-ports 1 [ port-setup "Inch'On" 228 -38 ]
+  create-ports 1 [ port-setup "Hong-Kong" 221 -51 ]
+  create-ports 1 [ port-setup "Shanghai" 226 -45 ]
+  create-ports 1 [ port-setup "Hambourg" 140 -23 ]
+  create-ports 1 [ port-setup "Felixstowe" 131 -24 ]
+  create-ports 1 [ port-setup "Buenos Aires" 86 -104 ]
+  create-ports 1 [ port-setup "Melbourne" 242 -108 ]
+  create-ports 1 [ port-setup "Brisbane" 252 -97 ]
+  create-ports 1 [ port-setup "Sidney" 248 -104 ]
+  create-ports 1 [ port-setup "Auckland" 265 -108 ]
+  create-ports 1 [ port-setup "Lagos" 135 -68 ]
+  create-ports 1 [ port-setup "Dakar" 117 -52 ]
+  create-ports 1 [ port-setup "Le Cap" 146 -103 ]
+  create-ports 1 [ port-setup "Jakarta" 221 -80 ]
+  create-ports 1 [ port-setup "Colombo" 196 -67 ]
+  create-ports 1 [ port-setup "Port Saïd" 155 -44 ]
+  create-ports 1 [ port-setup "Alexandrie" 151 -43 ]
+  create-ports 1 [ port-setup "Reykjavik" 118 -14 ]
+  create-ports 1 [ port-setup "Murmansk" 152 -10 ]
+  create-ports 1 [ port-setup "Karachi" 182 -48 ]
+  create-ports 1 [ port-setup "Porklang" 212 -70 ]
+  create-ports 1 [ port-setup "Port Gentil" 137 -74 ]
+  create-ports 1 [ port-setup "Rabat" 124 -42 ]
+  create-ports 1 [ port-setup "Port Saïd" 155 -44 ]
+  create-ports 1 [ port-setup "Salvador" 97 -84 ]
+  create-ports 1 [ port-setup "Recife" 100 -80 ]
+  create-ports 1 [ port-setup "Belem" 93 -76 ]
+  create-ports 1 [ port-setup "Cartagena" 70 -63 ]
+  create-ports 1 [ port-setup "Acapulco" 48 -56 ]
+  create-ports 1 [ port-setup "Anchorage" 37 -17 ]
+  create-ports 1 [ port-setup "Toamasina" 169 -90 ]
+  create-ports 1 [ port-setup "Port Saïd" 155 -44 ]
+  create-ports 1 [ port-setup "La Havane" 66 -52 ]
+  create-ports 1 [ port-setup "Port Moresby" 253 -82 ]
 end
 
-to airport-setup [airportName x y]
-  set xcor x
-  set ycor y
-  set name airportName
-  set shape "square"
-  set color grey
-  set size 3
-  create-airways-with other airports [ hide-link ]
-end
-
-to port-setup [portName x y]
-  set xcor x
-  set ycor y
-  set name portName
-  set shape "triangle"
-  set color red
-  set size 3
-end
 @#$#@#$#@
 GRAPHICS-WINDOW
 192
@@ -198,6 +251,83 @@ NIL
 NIL
 NIL
 1
+
+BUTTON
+23
+393
+180
+426
+Hide/Show Waterways
+ask waterways [ set hidden? not hidden? ]
+NIL
+1
+T
+OBSERVER
+NIL
+NIL
+NIL
+NIL
+1
+
+SLIDER
+13
+72
+185
+105
+boat-speed
+boat-speed
+0.1
+5
+0.2
+0.1
+1
+NIL
+HORIZONTAL
+
+SLIDER
+13
+28
+185
+61
+boat-max-number
+boat-max-number
+0
+500
+50.0
+1
+1
+NIL
+HORIZONTAL
+
+SLIDER
+12
+116
+184
+149
+plane-max-number
+plane-max-number
+0
+500
+50.0
+1
+1
+NIL
+HORIZONTAL
+
+SLIDER
+12
+160
+184
+193
+plane-speed
+plane-speed
+0.1
+5
+0.2
+0.1
+1
+NIL
+HORIZONTAL
 
 @#$#@#$#@
 ## WHAT IS IT?
