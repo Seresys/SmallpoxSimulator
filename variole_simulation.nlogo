@@ -1,48 +1,100 @@
-breed [airports airport]
-breed [ports port]
-breed [planes plane]
-breed [boats boat]
-
-undirected-link-breed [ airways airway ]
-undirected-link-breed [ waterways waterway ]
-
 turtles-own [
   name
 ]
 
 patches-own [
   ground
+  susceptible
+  exposed
+  infectious
+  recovered
 ]
 
 globals [
-
+  max-population
+  min-population
+  global-susceptible
+  global-exposed
+  global-infectious
+  global-recovered
 ]
 
-<<<<<<< Updated upstream
-planes-own [
-
-]
-=======
 breed [airports airport]
->>>>>>> Stashed changes
+breed [ground-patches ground-patch]
 
 to start
   clear-turtles
   clear-patches
+  setup
+  stop
+end
+
+to setup
   sea-setup
   ground-setup
+  constants-setup
   airports-setup
-<<<<<<< Updated upstream
-  ports-setup
-  planes-setup
-=======
-  ask patches [ output-print get-neighbors self ]
->>>>>>> Stashed changes
+  infection-setup
+  infection-numbers-setup
+  ask patches [ask (get-neighbors self) [if ground [set pcolor red]]]
+end
+
+to constants-setup
+  set max-population 1000
+  set min-population 200
+end
+
+to infection-numbers-setup
+  set-global-susceptible
+  output-print global-susceptible
+  set global-exposed 0
+  set global-infectious 0
+  set global-recovered 0
+end
+
+to set-global-susceptible
+  set global-susceptible 0
+
+  ask grounds [
+    set global-susceptible global-susceptible + susceptible
+  ]
+end
+
+to set-global-exposed
+  set global-exposed 0
+
+  ask grounds [
+    set global-exposed global-exposed + exposed
+  ]
+end
+
+to set-global-infectious
+  set global-infectious 0
+
+  ask grounds [
+    set global-infectious global-infectious + infectious
+  ]
+end
+
+to set-global-recovered
+  set global-recovered 0
+
+  ask grounds [
+    set global-recovered global-recovered + recovered
+  ]
+end
+
+to-report grounds
+  report patches with [ground = true]
 end
 
 to sea-setup
   ask patches [set pcolor blue]
   ask patches [set ground false]
+end
+
+to-report global-population
+  report global-susceptible + global-exposed + global-infectious + global-recovered
 end
 
 to ground-setup
@@ -55,39 +107,40 @@ to ground-setup
   ]
 end
 
-<<<<<<< Updated upstream
-to airport-setup [airportName x y]
-  set xcor x
-  set ycor y
-  set name airportName
-  set shape "square"
-  set color grey
-  set size 3
-  create-airways-with other airports [ hide-link ]
+to infection-setup
+  ask patches [
+    ifelse ground [
+      set susceptible population-setup self
+    ] [
+      set susceptible 0
+    ]
+
+    set exposed 0
+    set infectious 0
+    set recovered 0
+  ]
 end
 
-to port-setup [portName x y]
-  set xcor x
-  set ycor y
-  set name portName
-  set shape "triangle"
-  set color black
-  set size 3
-  create-waterways-with other ports [ hide-link ]
+to-report population-setup [current-patch]
+  report rand min-population max-population
 end
 
-to planes-setup
-  create-planes plane-max-number [ plane-setup ]
+to-report population [current-patch]
+  let total-population 0
+
+  ask current-patch [
+    set total-population susceptible + exposed + infectious + recovered
+  ]
+
+  report total-population
 end
 
-to plane-setup
-  ;;set shape "plane"
-  set color grey
-  set size 3
-=======
-to-report get-neighbors [patchx]
-  report (patch-set patchx neighbors)
->>>>>>> Stashed changes
+to-report get-neighbors [current-patch]
+  report (patch-set current-patch neighbors)
+end
+
+to-report rand [min-value max-value]
+  report random (max-value - min-value) + min-value
 end
 
 to airports-setup
@@ -124,7 +177,7 @@ to airports-setup
   create-airports 1 [ airport-setup "Melbourne" 242 -108 ]
   create-airports 1 [ airport-setup "Brisbane" 252 -97 ]
   create-airports 1 [ airport-setup "Bali" 226 -80 ]
-  create-airports 1 [ airport-setup "Singapour" 223 -74 ]
+  create-airports 1 [ airport-setup "Singapour" 216 -71 ]
   create-airports 1 [ airport-setup "Bangkok" 213 -60 ]
   create-airports 1 [ airport-setup "Los Angeles" 39 -42 ]
   create-airports 1 [ airport-setup "Manille" 229 -59 ]
@@ -144,67 +197,6 @@ to airports-setup
   create-airports 1 [ airport-setup "Bogota" 71 -70 ]
   create-airports 1 [ airport-setup "Vienne" 144 -27 ]
   create-airports 1 [ airport-setup "Jeddah" 162 -52 ]
-<<<<<<< Updated upstream
-
-end
-
-to ports-setup
-  create-ports 1 [ port-setup "Vancouver" 41 -24 ]
-  create-ports 1 [ port-setup "Montréal" 76 -28 ]
-  create-ports 1 [ port-setup "Valparaiso" 75 -104 ]
-  create-ports 1 [ port-setup "Vigo" 125 -32 ]
-  create-ports 1 [ port-setup "Rotterdam" 135 -24 ]
-  create-ports 1 [ port-setup "Kobe" 235 -41 ]
-  create-ports 1 [ port-setup "Halifax" 85 -30 ]
-  create-ports 1 [ port-setup "Houston" 54 -45 ]
-  create-ports 1 [ port-setup "Los Angeles" 39 -42 ]
-  create-ports 1 [ port-setup "Singapour" 223 -74 ]
-  create-ports 1 [ port-setup "South Louisiana" 61 -44 ]
-  create-ports 1 [ port-setup "Charleston" 66 -42 ]
-  create-ports 1 [ port-setup "Durban" 156 -97 ]
-  create-ports 1 [ port-setup "Dubai" 174 -50 ]
-  create-ports 1 [ port-setup "Seattle" 41 -30 ]
-  create-ports 1 [ port-setup "Le Pirée" 149 -37 ]
-  create-ports 1 [ port-setup "Erdemir" 156 -34 ]
-  create-ports 1 [ port-setup "Mundra" 187 -52 ]
-  create-ports 1 [ port-setup "Kaoshsiunj" 227 -51 ]
-  create-ports 1 [ port-setup "Inch'On" 228 -38 ]
-  create-ports 1 [ port-setup "Hong-Kong" 221 -51 ]
-  create-ports 1 [ port-setup "Shanghai" 226 -45 ]
-  create-ports 1 [ port-setup "Hambourg" 140 -23 ]
-  create-ports 1 [ port-setup "Felixstowe" 131 -24 ]
-  create-ports 1 [ port-setup "Buenos Aires" 86 -104 ]
-  create-ports 1 [ port-setup "Melbourne" 242 -108 ]
-  create-ports 1 [ port-setup "Brisbane" 252 -97 ]
-  create-ports 1 [ port-setup "Sidney" 248 -104 ]
-  create-ports 1 [ port-setup "Auckland" 265 -108 ]
-  create-ports 1 [ port-setup "Lagos" 135 -68 ]
-  create-ports 1 [ port-setup "Dakar" 117 -52 ]
-  create-ports 1 [ port-setup "Le Cap" 146 -103 ]
-  create-ports 1 [ port-setup "Jakarta" 221 -80 ]
-  create-ports 1 [ port-setup "Colombo" 196 -67 ]
-  create-ports 1 [ port-setup "Port Saïd" 155 -44 ]
-  create-ports 1 [ port-setup "Alexandrie" 151 -43 ]
-  create-ports 1 [ port-setup "Reykjavik" 118 -14 ]
-  create-ports 1 [ port-setup "Murmansk" 152 -10 ]
-  create-ports 1 [ port-setup "Karachi" 182 -48 ]
-  create-ports 1 [ port-setup "Porklang" 212 -70 ]
-  create-ports 1 [ port-setup "Port Gentil" 137 -74 ]
-  create-ports 1 [ port-setup "Rabat" 124 -42 ]
-  create-ports 1 [ port-setup "Port Saïd" 155 -44 ]
-  create-ports 1 [ port-setup "Salvador" 97 -84 ]
-  create-ports 1 [ port-setup "Recife" 100 -80 ]
-  create-ports 1 [ port-setup "Belem" 93 -76 ]
-  create-ports 1 [ port-setup "Cartagena" 70 -63 ]
-  create-ports 1 [ port-setup "Acapulco" 48 -56 ]
-  create-ports 1 [ port-setup "Anchorage" 37 -17 ]
-  create-ports 1 [ port-setup "Toamasina" 169 -90 ]
-  create-ports 1 [ port-setup "Port Saïd" 155 -44 ]
-  create-ports 1 [ port-setup "La Havane" 66 -52 ]
-  create-ports 1 [ port-setup "Port Moresby" 253 -82 ]
-end
-
-=======
   create-airports 1 [ airport-setup "Los Angeles" 39 -42 ]
 
 end
@@ -217,7 +209,6 @@ to airport-setup [airportName x y]
   set color grey
   set size 3
 end
->>>>>>> Stashed changes
 @#$#@#$#@
 GRAPHICS-WINDOW
 192
@@ -263,103 +254,6 @@ NIL
 NIL
 1
 
-<<<<<<< Updated upstream
-BUTTON
-22
-436
-160
-469
-Hide/Show Airways
-ask airways [ set hidden? not hidden? ]
-NIL
-1
-T
-OBSERVER
-NIL
-NIL
-NIL
-NIL
-1
-
-BUTTON
-23
-393
-180
-426
-Hide/Show Waterways
-ask waterways [ set hidden? not hidden? ]
-NIL
-1
-T
-OBSERVER
-NIL
-NIL
-NIL
-NIL
-1
-
-SLIDER
-13
-72
-185
-105
-boat-speed
-boat-speed
-0.1
-5
-0.2
-0.1
-1
-NIL
-HORIZONTAL
-
-SLIDER
-13
-28
-185
-61
-boat-max-number
-boat-max-number
-0
-500
-50.0
-1
-1
-NIL
-HORIZONTAL
-
-SLIDER
-12
-116
-184
-149
-plane-max-number
-plane-max-number
-0
-500
-50.0
-1
-1
-NIL
-HORIZONTAL
-
-SLIDER
-12
-160
-184
-193
-plane-speed
-plane-speed
-0.1
-5
-0.2
-0.1
-1
-NIL
-HORIZONTAL
-
-=======
->>>>>>> Stashed changes
 @#$#@#$#@
 ## WHAT IS IT?
 

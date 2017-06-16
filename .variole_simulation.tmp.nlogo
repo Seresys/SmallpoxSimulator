@@ -4,27 +4,97 @@ turtles-own [
 
 patches-own [
   ground
+  susceptible
+  exposed
+  infectious
+  recovered
 ]
 
 globals [
-
+  max-population
+  min-population
+  global-susceptible
+  global-exposed
+  global-infectious
+  global-recovered
 ]
 
 breed [airports airport]
+breed [ground-patches ground-patch]
 
 to start
   clear-turtles
   clear-patches
+  setup
+  stop
+end
+
+to setup
   sea-setup
   ground-setup
+  constants-setup
   airports-setup
-  ask patches [ask (get-neighbors self) [ set pcolor red ]]
-  stop
+  infection-setup
+  infection-numbers-setup
+  ask patches [ask (get-neighbors self) [if ground [set pcolor red]]]
+end
+
+to constants-setup
+  set max-population 10000
+  set min-population 200
+end
+
+to infection-numbers-setup
+  set-global-susceptible
+  output-print global-susceptible
+  set global-exposed 0
+  set global-infectious 0
+  set global-recovered 0
+end
+
+to set-global-susceptible
+  set global-susceptible 0
+
+  ask grounds [
+    set global-susceptible global-susceptible + susceptible
+  ]
+end
+
+to set-global-exposed
+  set global-exposed 0
+
+  ask grounds [
+    set global-exposed global-exposed + exposed
+  ]
+end
+
+to set-global-infectious
+  set global-infectious 0
+
+  ask grounds [
+    set global-infectious global-infectious + infectious
+  ]
+end
+
+to set-global-recovered
+  set global-recovered 0
+
+  ask grounds [
+    set global-recovered global-recovered + recovered
+  ]
+end
+
+to-report grounds
+  report patches with [ground = true]
 end
 
 to sea-setup
   ask patches [set pcolor blue]
   ask patches [set ground false]
+end
+
+to-report global-population
+  report global-susceptible + global-exposed + global-infectious + global-recovered
 end
 
 to ground-setup
@@ -37,8 +107,40 @@ to ground-setup
   ]
 end
 
-to-report get-neighbors [patchx]
-  report (patch-set patchx neighbors)
+to infection-setup
+  ask patches [
+    ifelse ground [
+      set susceptible population-setup self
+    ] [
+      set susceptible 0
+    ]
+
+    set exposed 0
+    set infectious 0
+    set recovered 0
+  ]
+end
+
+to-report population-setup [current-patch]
+  report rand min-population max-population
+end
+
+to-report population [current-patch]
+  let total-population 0
+
+  ask current-patch [
+    set total-population susceptible + exposed + infectious + recovered
+  ]
+
+  report total-population
+end
+
+to-report get-neighbors [current-patch]
+  report (patch-set current-patch neighbors)
+end
+
+to-report rand [min-value max-value]
+  report random (max-value - min-value) + min-value
 end
 
 to airports-setup
