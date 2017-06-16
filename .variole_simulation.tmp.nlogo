@@ -37,12 +37,9 @@ to setup
   ground-setup
   airports-setup
   ports-setup
-  if (allow-air-traffic) [
-    planes-setup
-  ]
-  if (allow-water-traffic) [
-    boats-setup
-  ]
+
+  planes-setup
+  boats-setup
 end
 
 to go
