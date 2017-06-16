@@ -2,6 +2,8 @@ turtles-own [
   name
 ]
 
+; ask patches [ask (get-neighbors self) [if ground [set pcolor red]]]
+
 patches-own [
   ground
   susceptible
@@ -17,6 +19,7 @@ globals [
   global-exposed
   global-infectious
   global-recovered
+  mouse-was-down?
 ]
 
 breed [airports airport]
@@ -29,6 +32,10 @@ to start
   stop
 end
 
+to go
+  mouse-manager
+end
+
 to setup
   sea-setup
   ground-setup
@@ -36,20 +43,36 @@ to setup
   airports-setup
   infection-setup
   infection-numbers-setup
-  ask patches [ask (get-neighbors self) [if ground [set pcolor red]]]
+end
+
+to-report mouse-clicked?
+  report (mouse-was-down? = true and not mouse-down?)
 end
 
 to constants-setup
-  set max-population 10000
-  set min-population 200
+  set max-population 1000000
+  set min-population 200000
 end
 
 to infection-numbers-setup
   set-global-susceptible
-  output-print global-susceptible
   set global-exposed 0
   set global-infectious 0
   set global-recovered 0
+end
+
+to mouse-manager
+  let mouse-is-down? mouse-down?
+  if mouse-clicked? [
+    infect-ground
+  ]
+  set mouse-was-down? mouse-is-down?
+end
+
+to infect-ground
+  ask patches with [pxcor = round mouse-xcor and pycor = round mouse-ycor] [
+    set pcolor green
+  ]
 end
 
 to set-global-susceptible
@@ -245,6 +268,23 @@ BUTTON
 Start
 start
 NIL
+1
+T
+OBSERVER
+NIL
+NIL
+NIL
+NIL
+1
+
+BUTTON
+56
+407
+119
+440
+NIL
+go
+T
 1
 T
 OBSERVER
