@@ -1,5 +1,6 @@
 breed [airports airport]
 breed [ports port]
+breed [ground-patches ground-patch]
 breed [planes plane]
 breed [boats boat]
 
@@ -10,12 +11,24 @@ turtles-own [
   name
 ]
 
+; ask patches [ask (get-neighbors self) [if ground [set pcolor red]]]
+
 patches-own [
   ground
+  susceptible
+  exposed
+  infectious
+  recovered
 ]
 
 globals [
-
+  max-population
+  min-population
+  global-susceptible
+  global-exposed
+  global-infectious
+  global-recovered
+  mouse-was-down?
 ]
 
 planes-own [
@@ -35,6 +48,7 @@ to setup
   reset-ticks
   sea-setup
   ground-setup
+  constants-setup
   airports-setup
   ports-setup
   if (allow-air-traffic) [
@@ -46,6 +60,7 @@ to setup
 end
 
 to go
+  mouse-manager
   ask planes [ plane-go ]
   if (allow-air-traffic) [
     respawn-planes
@@ -54,12 +69,84 @@ to go
   if (allow-water-traffic) [
     respawn-boats
   ]
+  infection-setup
+  infection-numbers-setup
   tick
+end
+
+to-report mouse-clicked?
+  report (mouse-was-down? = true and not mouse-down?)
+end
+
+to constants-setup
+  set max-population 1000000
+  set min-population 200000
+end
+
+to infection-numbers-setup
+  set-global-susceptible
+  set global-exposed 0
+  set global-infectious 0
+  set global-recovered 0
+end
+
+to mouse-manager
+  let mouse-is-down? mouse-down?
+  if mouse-clicked? [
+    infect-ground mouse-xcor mouse-ycor
+  ]
+  set mouse-was-down? mouse-is-down?
+end
+
+to infect-ground [ x y ]
+  ask patches with [pxcor = round x and pycor = round y] [
+    set pcolor green
+  ]
+end
+
+to set-global-susceptible
+  set global-susceptible 0
+
+  ask grounds [
+    set global-susceptible global-susceptible + susceptible
+  ]
+end
+
+to set-global-exposed
+  set global-exposed 0
+
+  ask grounds [
+    set global-exposed global-exposed + exposed
+  ]
+end
+
+to set-global-infectious
+  set global-infectious 0
+
+  ask grounds [
+    set global-infectious global-infectious + infectious
+  ]
+end
+
+to set-global-recovered
+  set global-recovered 0
+
+  ask grounds [
+    set global-recovered global-recovered + recovered
+  ]
+end
+
+to-report grounds
+  report patches with [ground = true]
 end
 
 to sea-setup
   ask patches [set pcolor blue]
   ask patches [set ground false]
+end
+
+to-report global-population
+  report global-susceptible + global-exposed + global-infectious + global-recovered
 end
 
 to ground-setup
@@ -72,24 +159,36 @@ to ground-setup
   ]
 end
 
-to airport-setup [airportName x y]
-  set xcor x
-  set ycor y
-  set name airportName
-  set shape "square"
-  set color grey
-  set size 3
-  create-airways-with other airports [ hide-link ]
+to infection-setup
+  ask patches [
+    ifelse ground [
+      set susceptible population-setup self
+    ] [
+      set susceptible 0
+    ]
+
+    set exposed 0
+    set infectious 0
+    set recovered 0
+  ]
 end
 
-to port-setup [portName x y]
-  set xcor x
-  set ycor y
-  set name portName
-  set shape "triangle"
-  set color black
-  set size 3
-  create-waterways-with other ports [ hide-link ]
+to-report population-setup [current-patch]
+  report rand min-population max-population
+end
+
+to-report population [current-patch]
+  let total-population 0
+
+  ask current-patch [
+    set total-population susceptible + exposed + infectious + recovered
+  ]
+
+  report total-population
+end
+
+to-report get-neighbors [current-patch]
+  report (patch-set current-patch neighbors)
 end
 
 to planes-setup
@@ -158,61 +257,8 @@ to respawn-boats
   ]
 end
 
-to airports-setup
-  create-airports 1 [ airport-setup "Paris" 133 -29 ]
-  create-airports 1 [ airport-setup "New-York" 72 -38 ]
-  create-airports 1 [ airport-setup "Los Angeles" 39 -42 ]
-  create-airports 1 [ airport-setup "Rio de Janeiro" 95 -92 ]
-  create-airports 1 [ airport-setup "Buenos Aires" 86 -104 ]
-  create-airports 1 [ airport-setup "Dakar" 117 -52 ]
-  create-airports 1 [ airport-setup "Madrid" 127 -35 ]
-  create-airports 1 [ airport-setup "Rome" 141 -34 ]
-  create-airports 1 [ airport-setup "Berlin" 140 -25 ]
-  create-airports 1 [ airport-setup "Stockholm" 143 -17 ]
-  create-airports 1 [ airport-setup "Moscou" 165 -22 ]
-  create-airports 1 [ airport-setup "Istanbul" 152 -35 ]
-  create-airports 1 [ airport-setup "Londres" 131 -25 ]
-  create-airports 1 [ airport-setup "Dublin" 126 -23 ]
-  create-airports 1 [ airport-setup "Mumbai" 190 -55 ]
-  create-airports 1 [ airport-setup "New Delhi" 194 -47 ]
-  create-airports 1 [ airport-setup "Le Caire" 155 -44 ]
-  create-airports 1 [ airport-setup "Dubai" 174 -50 ]
-  create-airports 1 [ airport-setup "Hong-Kong" 221 -51 ]
-  create-airports 1 [ airport-setup "Tokyo" 239 -39 ]
-  create-airports 1 [ airport-setup "Sidney" 248 -104 ]
-  create-airports 1 [ airport-setup "Le Cap" 146 -103 ]
-  create-airports 1 [ airport-setup "Johannesbourg" 154 -95 ]
-  create-airports 1 [ airport-setup "Nairobi" 162 -69 ]
-  create-airports 1 [ airport-setup "Accra" 132 -66 ]
-  create-airports 1 [ airport-setup "Perth" 223 -102 ]
-  create-airports 1 [ airport-setup "Wellington" 265 -109 ]
-  create-airports 1 [ airport-setup "Ulan Bator" 209 -30 ]
-  create-airports 1 [ airport-setup "Pékin" 220 -36 ]
-  create-airports 1 [ airport-setup "Shanghai" 226 -45 ]
-  create-airports 1 [ airport-setup "Melbourne" 242 -108 ]
-  create-airports 1 [ airport-setup "Brisbane" 252 -97 ]
-  create-airports 1 [ airport-setup "Bali" 226 -80 ]
-  create-airports 1 [ airport-setup "Singapour" 223 -74 ]
-  create-airports 1 [ airport-setup "Bangkok" 213 -60 ]
-  create-airports 1 [ airport-setup "Los Angeles" 39 -42 ]
-  create-airports 1 [ airport-setup "Manille" 229 -59 ]
-  create-airports 1 [ airport-setup "Panama" 61 -63 ]
-  create-airports 1 [ airport-setup "Mexico" 49 -55 ]
-  create-airports 1 [ airport-setup "Brasilia" 92 -82 ]
-  create-airports 1 [ airport-setup "Santiago" 75 -98 ]
-  create-airports 1 [ airport-setup "La Paz" 78 -84 ]
-  create-airports 1 [ airport-setup "Honolulu" 4 -55 ]
-  create-airports 1 [ airport-setup "Seattle" 41 -30 ]
-  create-airports 1 [ airport-setup "Toronto" 74 -30 ]
-  create-airports 1 [ airport-setup "Denver" 47 -36 ]
-  create-airports 1 [ airport-setup "Houston" 54 -45 ]
-  create-airports 1 [ airport-setup "Miami" 65 -47 ]
-  create-airports 1 [ airport-setup "Detroit" 67 -35 ]
-  create-airports 1 [ airport-setup "Caracas" 79 -64 ]
-  create-airports 1 [ airport-setup "Bogota" 71 -70 ]
-  create-airports 1 [ airport-setup "Vienne" 144 -27 ]
-  create-airports 1 [ airport-setup "Jeddah" 162 -52 ]
-
+to-report rand [min-value max-value]
+  report random (max-value - min-value) + min-value
 end
 
 to ports-setup
@@ -270,6 +316,83 @@ to ports-setup
   create-ports 1 [ port-setup "La Havane" 66 -52 ]
   create-ports 1 [ port-setup "Port Moresby" 253 -82 ]
 end
+
+to airports-setup
+  create-airports 1 [ airport-setup "Paris" 133 -29 ]
+  create-airports 1 [ airport-setup "New-York" 72 -38 ]
+  create-airports 1 [ airport-setup "Los Angeles" 39 -42 ]
+  create-airports 1 [ airport-setup "Rio de Janeiro" 95 -92 ]
+  create-airports 1 [ airport-setup "Buenos Aires" 86 -104 ]
+  create-airports 1 [ airport-setup "Dakar" 117 -52 ]
+  create-airports 1 [ airport-setup "Madrid" 127 -35 ]
+  create-airports 1 [ airport-setup "Rome" 141 -34 ]
+  create-airports 1 [ airport-setup "Berlin" 140 -25 ]
+  create-airports 1 [ airport-setup "Stockholm" 143 -17 ]
+  create-airports 1 [ airport-setup "Moscou" 165 -22 ]
+  create-airports 1 [ airport-setup "Istanbul" 152 -35 ]
+  create-airports 1 [ airport-setup "Londres" 131 -25 ]
+  create-airports 1 [ airport-setup "Dublin" 126 -23 ]
+  create-airports 1 [ airport-setup "Mumbai" 190 -55 ]
+  create-airports 1 [ airport-setup "New Delhi" 194 -47 ]
+  create-airports 1 [ airport-setup "Le Caire" 155 -44 ]
+  create-airports 1 [ airport-setup "Dubai" 174 -50 ]
+  create-airports 1 [ airport-setup "Hong-Kong" 221 -51 ]
+  create-airports 1 [ airport-setup "Tokyo" 239 -39 ]
+  create-airports 1 [ airport-setup "Sidney" 248 -104 ]
+  create-airports 1 [ airport-setup "Le Cap" 146 -103 ]
+  create-airports 1 [ airport-setup "Johannesbourg" 154 -95 ]
+  create-airports 1 [ airport-setup "Nairobi" 162 -69 ]
+  create-airports 1 [ airport-setup "Accra" 132 -66 ]
+  create-airports 1 [ airport-setup "Perth" 223 -102 ]
+  create-airports 1 [ airport-setup "Wellington" 265 -109 ]
+  create-airports 1 [ airport-setup "Ulan Bator" 209 -30 ]
+  create-airports 1 [ airport-setup "Pékin" 220 -36 ]
+  create-airports 1 [ airport-setup "Shanghai" 226 -45 ]
+  create-airports 1 [ airport-setup "Melbourne" 242 -108 ]
+  create-airports 1 [ airport-setup "Brisbane" 252 -97 ]
+  create-airports 1 [ airport-setup "Bali" 226 -80 ]
+  create-airports 1 [ airport-setup "Singapour" 216 -71 ]
+  create-airports 1 [ airport-setup "Bangkok" 213 -60 ]
+  create-airports 1 [ airport-setup "Los Angeles" 39 -42 ]
+  create-airports 1 [ airport-setup "Manille" 229 -59 ]
+  create-airports 1 [ airport-setup "Panama" 61 -63 ]
+  create-airports 1 [ airport-setup "Mexico" 49 -55 ]
+  create-airports 1 [ airport-setup "Brasilia" 92 -82 ]
+  create-airports 1 [ airport-setup "Santiago" 75 -98 ]
+  create-airports 1 [ airport-setup "La Paz" 78 -84 ]
+  create-airports 1 [ airport-setup "Honolulu" 4 -55 ]
+  create-airports 1 [ airport-setup "Seattle" 41 -30 ]
+  create-airports 1 [ airport-setup "Toronto" 74 -30 ]
+  create-airports 1 [ airport-setup "Denver" 47 -36 ]
+  create-airports 1 [ airport-setup "Houston" 54 -45 ]
+  create-airports 1 [ airport-setup "Miami" 65 -47 ]
+  create-airports 1 [ airport-setup "Detroit" 67 -35 ]
+  create-airports 1 [ airport-setup "Caracas" 79 -64 ]
+  create-airports 1 [ airport-setup "Bogota" 71 -70 ]
+  create-airports 1 [ airport-setup "Vienne" 144 -27 ]
+  create-airports 1 [ airport-setup "Jeddah" 162 -52 ]
+  create-airports 1 [ airport-setup "Los Angeles" 39 -42 ]
+
+end
+
+to airport-setup [airportName x y]
+  set xcor x
+  set ycor y
+  set name airportName
+  set shape "star"
+  set color grey
+  set size 3
+end
+
+to port-setup [portName x y]
+  set xcor x
+  set ycor y
+  set name portName
+  set shape "triangle"
+  set color black
+  set size 3
+  create-waterways-with other ports [ hide-link ]
+end
 @#$#@#$#@
 GRAPHICS-WINDOW
 192
@@ -315,40 +438,6 @@ NIL
 NIL
 0
 
-BUTTON
-22
-436
-160
-469
-Hide/Show Airways
-ask airways [ set hidden? not hidden? ]
-NIL
-1
-T
-OBSERVER
-NIL
-NIL
-NIL
-NIL
-1
-
-BUTTON
-23
-393
-180
-426
-Hide/Show Waterways
-ask waterways [ set hidden? not hidden? ]
-NIL
-1
-T
-OBSERVER
-NIL
-NIL
-NIL
-NIL
-1
-
 SLIDER
 13
 72
@@ -388,7 +477,7 @@ plane-max-number
 plane-max-number
 0
 500
-54.0
+102.0
 1
 1
 NIL
@@ -433,7 +522,7 @@ SWITCH
 241
 allow-air-traffic
 allow-air-traffic
-0
+1
 1
 -1000
 
