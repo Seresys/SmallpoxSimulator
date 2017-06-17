@@ -629,7 +629,7 @@ infected-number-by-click
 infected-number-by-click
 1
 200000
-200000.0
+199997.0
 1
 1
 persons
