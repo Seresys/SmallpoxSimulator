@@ -18,8 +18,10 @@ patches-own [
   sane-population
   immune-population
   dead-population
+  contagious-population
   injected-by-click
   infected-list
+  infected-population
   death-by-day-list
 ]
 
@@ -41,11 +43,15 @@ globals [
 planes-own [
   departure
   arrival
+  infected
+  transport-ratio
 ]
 
 boats-own [
   departure
   arrival
+  infected
+  transport-ratio
 ]
 
 to setup
@@ -135,7 +141,9 @@ end
 to init-patch
   set sane-population population-setup
   set immune-population 0
+  set contagious-population 0
   set dead-population 0
+  set infected-population 0
   set infected-list (list)
   set death-by-day-list (list)
 end
@@ -146,11 +154,23 @@ to ground-go
 
   set sane-population sane-population - number-infected ;; new number of sane population
   set infected-list fput number-infected infected-list ;; switch list to right by introducing new number of infected
+  set infected-population infected-population + number-infected
 
   ;; Adding new immune population + delete last element of infected
   if (length infected-list > end-remission + 1) [
     set immune-population immune-population + last infected-list
+    set infected-population infected-population - last infected-list
     set infected-list but-last infected-list
+  ]
+
+  ;; Adding contagious population
+  if (length infected-list >= start-contagious + 1) [
+    set contagious-population contagious-population + item start-contagious infected-list
+  ]
+
+  ;; Deleting contagious population
+  if (length infected-list >= end-contagious + 1) [
+    set contagious-population contagious-population - item end-contagious infected-list
   ]
 
   ;; Adding death by day
@@ -168,6 +188,7 @@ to ground-go
   while[ index < length death-by-day-list][
     let death-by-day item index death-by-day-list
     let new-infected-number item (start-lethality + index) infected-list - death-by-day
+    set infected-population infected-population - death-by-day
     set dead-population dead-population + death-by-day
 
     if new-infected-number < 0 [
@@ -186,49 +207,84 @@ to-report get-uninfected-population
 end
 
 to-report get-infected-population
-  let nb-infected 0
-  foreach infected-list [ nb-day ->
-    set nb-infected nb-infected + nb-day
-  ]
-  report nb-infected
+  report infected-population
+end
+
+to-report get-contagious-population
+  report contagious-population
 end
 
 to update-color
-  let color-value round(255 - 255 * get-ratio-infected-patch)
-  set pcolor rgb 255 color-value color-value
+  if(population-type-to-show = "infected")[
+    let color-value round(255 - 55 + (200 * get-ratio-infected-patch))
+    if (color-value = 200)[
+      set color-value 255
+    ]
+    set pcolor rgb 255 color-value color-value
+  ]
+
+  if(population-type-to-show = "dead")[
+    let color-value 255 - round(255 * get-ratio-dead-patch)
+    set pcolor rgb color-value color-value color-value
+  ]
+
+  if(population-type-to-show = "immune")[
+    let color-value round(255 - 55 + (200 * get-ratio-immune-patch))
+    if (color-value = 200)[
+      set color-value 255
+    ]
+    set pcolor rgb color-value 255 color-value
+  ]
 end
 
 to-report get-ratio-infected-patch
-  let infected-population get-infected-population
   let total-population infected-population + get-uninfected-population + dead-population
-  report infected-population / total-population
+end
+
+to-report get-ratio-dead-patch
+  let total-population infected-population + get-uninfected-population + dead-population
+  report dead-population / total-population
+end
+
+to-report get-ratio-immune-patch
+  let total-population infected-population + get-uninfected-population + dead-population
+  report immune-population / total-population
 end
 
 to-report get-infected-today
   if (sane-population <= 0 )[
     report 0
   ]
+
   let injected 0
+
   if (injected-by-click != 0)[
     set injected injected-by-click
     set injected-by-click 0
   ]
+
   let infected-today get-infected-by-neighbours * sane-population + injected
+
   if(sane-population - infected-today < 0)[
     set infected-today sane-population
   ]
+
   report infected-today
 end
 
 to-report get-infected-by-neighbours
   let neighbours get-neighbors
   let population-neighbor get-uninfected-population + dead-population
-  let infected-neighbor get-infected-population
+  let contagious-neighbor get-contagious-population
+
   ask neighbours [
     set population-neighbor population-neighbor + get-uninfected-population + dead-population
-    set infected-neighbor infected-neighbor + get-infected-population
+    set contagious-neighbor contagious-neighbor + get-contagious-population
   ]
-  report (contagion-rate / 100) * (infected-neighbor / population-neighbor)
+
+  let density (get-infected-population + get-uninfected-population + dead-population) / max-population
+
+  report (contagion-rate / 100) * (contagious-neighbor / population-neighbor) * density
 end
 
 to-report population-setup
@@ -245,7 +301,7 @@ end
 
 to plane-setup
   set shape "airplane"
-  set color grey
+  set color black
   set size 3
 
   set departure one-of airports
@@ -254,14 +310,40 @@ to plane-setup
   while [ [xcor] of departure = [xcor] of arrival and  [ycor] of departure = [ycor] of arrival ] [
     set arrival one-of airports
   ]
-
+  set infected false
   move-to departure
   set heading towards arrival
+  infect-transport plane-contagion-threshold
+end
+
+to infect-transport [threshold]
+  let ratio 0
+  let x xcor
+  let y ycor
+  ask patches with [pxcor = round x and pycor = round y] [
+    set ratio get-contagious-population / get-uninfected-population * 100
+  ]
+  if ( ratio > threshold) [
+    set infected true
+    set color rgb round (255 * ratio) 0 0
+    set transport-ratio ratio
+  ]
+end
+
+to infect-arrival
+  let x [xcor] of arrival
+  let y [ycor] of arrival
+  let ratio transport-ratio
+
+  ask patches with [pxcor = round x and pycor = round y] [
+    set injected-by-click ratio / 100 * sane-population
+  ]
 end
 
 to plane-go
   fd plane-speed
   if distance arrival < 1 [
+    infect-arrival
     die
   ]
 end
@@ -290,11 +372,13 @@ to boat-setup
 
   move-to departure
   set heading towards arrival
+  infect-transport boat-contagion-threshold
 end
 
 to boat-go
   fd boat-speed
   if distance arrival < 1 [
+    infect-arrival
     die
   ]
 end
@@ -311,7 +395,7 @@ end
 
 to ports-setup
   create-ports 1 [ port-setup "Vancouver" 41 -24 ]
-  create-ports 1 [ port-setup "Montréal" 76 -28 ]
+  create-ports 1 [ port-setup "Montréal" 76 -27 ]
   create-ports 1 [ port-setup "Valparaiso" 75 -104 ]
   create-ports 1 [ port-setup "Vigo" 125 -32 ]
   create-ports 1 [ port-setup "Rotterdam" 135 -24 ]
@@ -319,7 +403,7 @@ to ports-setup
   create-ports 1 [ port-setup "Halifax" 85 -30 ]
   create-ports 1 [ port-setup "Houston" 54 -45 ]
   create-ports 1 [ port-setup "Los Angeles" 39 -42 ]
-  create-ports 1 [ port-setup "Singapour" 223 -74 ]
+  create-ports 1 [ port-setup "Singapour" 222 -71 ]
   create-ports 1 [ port-setup "South Louisiana" 61 -44 ]
   create-ports 1 [ port-setup "Charleston" 66 -42 ]
   create-ports 1 [ port-setup "Durban" 156 -97 ]
@@ -328,8 +412,8 @@ to ports-setup
   create-ports 1 [ port-setup "Le Pirée" 149 -37 ]
   create-ports 1 [ port-setup "Erdemir" 156 -34 ]
   create-ports 1 [ port-setup "Mundra" 187 -52 ]
-  create-ports 1 [ port-setup "Kaoshsiunj" 227 -51 ]
-  create-ports 1 [ port-setup "Inch'On" 228 -38 ]
+  create-ports 1 [ port-setup "Kaohsiung" 228 -51 ]
+  create-ports 1 [ port-setup "Inch'On" 229 -38 ]
   create-ports 1 [ port-setup "Hong-Kong" 221 -51 ]
   create-ports 1 [ port-setup "Shanghai" 226 -45 ]
   create-ports 1 [ port-setup "Hambourg" 140 -23 ]
@@ -338,19 +422,19 @@ to ports-setup
   create-ports 1 [ port-setup "Melbourne" 242 -108 ]
   create-ports 1 [ port-setup "Brisbane" 252 -97 ]
   create-ports 1 [ port-setup "Sidney" 248 -104 ]
-  create-ports 1 [ port-setup "Auckland" 265 -108 ]
+  create-ports 1 [ port-setup "Auckland" 266 -108 ]
   create-ports 1 [ port-setup "Lagos" 135 -68 ]
   create-ports 1 [ port-setup "Dakar" 117 -52 ]
   create-ports 1 [ port-setup "Le Cap" 146 -103 ]
   create-ports 1 [ port-setup "Jakarta" 221 -80 ]
-  create-ports 1 [ port-setup "Colombo" 196 -67 ]
+  create-ports 1 [ port-setup "Colombo" 197 -66 ]
   create-ports 1 [ port-setup "Port Saïd" 155 -44 ]
   create-ports 1 [ port-setup "Alexandrie" 151 -43 ]
   create-ports 1 [ port-setup "Reykjavik" 118 -14 ]
   create-ports 1 [ port-setup "Murmansk" 152 -10 ]
   create-ports 1 [ port-setup "Karachi" 182 -48 ]
   create-ports 1 [ port-setup "Porklang" 212 -70 ]
-  create-ports 1 [ port-setup "Port Gentil" 137 -74 ]
+  create-ports 1 [ port-setup "Port Gentil" 138 -74 ]
   create-ports 1 [ port-setup "Rabat" 124 -42 ]
   create-ports 1 [ port-setup "Port Saïd" 155 -44 ]
   create-ports 1 [ port-setup "Salvador" 97 -84 ]
@@ -367,7 +451,7 @@ end
 
 to airports-setup
   create-airports 1 [ airport-setup "Paris" 133 -29 ]
-  create-airports 1 [ airport-setup "New-York" 72 -38 ]
+  create-airports 1 [ airport-setup "New-York" 71 -38 ]
   create-airports 1 [ airport-setup "Los Angeles" 39 -42 ]
   create-airports 1 [ airport-setup "Rio de Janeiro" 95 -92 ]
   create-airports 1 [ airport-setup "Buenos Aires" 86 -104 ]
@@ -398,8 +482,8 @@ to airports-setup
   create-airports 1 [ airport-setup "Shanghai" 226 -45 ]
   create-airports 1 [ airport-setup "Melbourne" 242 -108 ]
   create-airports 1 [ airport-setup "Brisbane" 252 -97 ]
-  create-airports 1 [ airport-setup "Bali" 226 -80 ]
-  create-airports 1 [ airport-setup "Singapour" 216 -71 ]
+  create-airports 1 [ airport-setup "Bali" 226 -81 ]
+  create-airports 1 [ airport-setup "Singapour" 222 -71 ]
   create-airports 1 [ airport-setup "Bangkok" 213 -60 ]
   create-airports 1 [ airport-setup "Los Angeles" 39 -42 ]
   create-airports 1 [ airport-setup "Manille" 229 -59 ]
@@ -408,7 +492,7 @@ to airports-setup
   create-airports 1 [ airport-setup "Brasilia" 92 -82 ]
   create-airports 1 [ airport-setup "Santiago" 75 -98 ]
   create-airports 1 [ airport-setup "La Paz" 78 -84 ]
-  create-airports 1 [ airport-setup "Honolulu" 4 -55 ]
+  create-airports 1 [ airport-setup "Honolulu" 3 -55 ]
   create-airports 1 [ airport-setup "Seattle" 41 -30 ]
   create-airports 1 [ airport-setup "Toronto" 74 -30 ]
   create-airports 1 [ airport-setup "Denver" 47 -36 ]
@@ -444,10 +528,10 @@ to port-setup [portName x y]
 end
 @#$#@#$#@
 GRAPHICS-WINDOW
-192
-10
-1630
-649
+403
+16
+1841
+655
 -1
 -1
 5.0
@@ -472,9 +556,9 @@ ticks
 
 BUTTON
 22
-479
+235
 85
-512
+268
 Start
 go
 T
@@ -488,29 +572,29 @@ NIL
 0
 
 SLIDER
-13
-72
-185
-105
+424
+750
+596
+783
 boat-speed
 boat-speed
 0.1
 0.5
-0.1
+0.5
 0.05
 1
 NIL
 HORIZONTAL
 
 SLIDER
-13
-28
-185
-61
+424
+706
+596
+739
 boat-max-number
 boat-max-number
 0
-500
+100
 45.0
 1
 1
@@ -518,30 +602,30 @@ NIL
 HORIZONTAL
 
 SLIDER
-12
-116
-184
-149
+660
+705
+832
+738
 plane-max-number
 plane-max-number
 0
-500
-102.0
+100
+56.0
 1
 1
 NIL
 HORIZONTAL
 
 SLIDER
-12
-160
-184
-193
+660
+749
+832
+782
 plane-speed
 plane-speed
 0.1
 0.5
-0.2
+0.5
 0.05
 1
 NIL
@@ -549,9 +633,9 @@ HORIZONTAL
 
 BUTTON
 97
-480
+236
 161
-513
+269
 Setup
 setup
 NIL
@@ -565,10 +649,10 @@ NIL
 1
 
 SWITCH
-13
-208
-177
-241
+901
+707
+1065
+740
 allow-air-traffic
 allow-air-traffic
 0
@@ -576,10 +660,10 @@ allow-air-traffic
 -1000
 
 SWITCH
-13
-249
-171
-282
+901
+748
+1059
+781
 allow-water-traffic
 allow-water-traffic
 0
@@ -588,9 +672,9 @@ allow-water-traffic
 
 BUTTON
 23
-433
+189
 163
-466
+222
 Hide/Show Airways
 ask airways [set hidden? not hidden?]
 NIL
@@ -605,9 +689,9 @@ NIL
 
 BUTTON
 23
-394
+150
 180
-427
+183
 Hide/Show Waterways
 ask waterways [set hidden? not hidden?]
 NIL
@@ -621,15 +705,45 @@ NIL
 1
 
 SLIDER
-22
-669
-276
-702
+18
+391
+272
+424
 infected-number-by-click
 infected-number-by-click
 1
 200000
-199997.0
+200000.0
+1
+1
+persons
+HORIZONTAL
+
+SLIDER
+18
+442
+190
+475
+contagion-rate
+contagion-rate
+0
+100
+100.0
+1
+1
+%
+HORIZONTAL
+
+SLIDER
+22
+60
+254
+93
+min-population-by-patch
+min-population-by-patch
+1
+400000
+200922.0
 1
 1
 persons
@@ -637,18 +751,88 @@ HORIZONTAL
 
 SLIDER
 22
-720
-194
-753
-contagion-rate
-contagion-rate
+104
+254
+137
+max-population-by-patch
+max-population-by-patch
+800000
+1200000
+1000000.0
+1
+1
+persons
+HORIZONTAL
+
+SLIDER
+1133
+706
+1350
+739
+plane-contagion-threshold
+plane-contagion-threshold
 0
 100
-50.0
+0.0
 1
 1
 %
 HORIZONTAL
+
+SLIDER
+1135
+752
+1347
+785
+boat-contagion-threshold
+boat-contagion-threshold
+0
+100
+0.0
+1
+1
+%
+HORIZONTAL
+
+CHOOSER
+21
+279
+183
+324
+population-type-to-show
+population-type-to-show
+"infected" "dead" "immune"
+1
+
+TEXTBOX
+26
+32
+176
+51
+Setup buttons
+15
+0.0
+1
+
+TEXTBOX
+23
+356
+206
+394
+Infection setup buttons
+15
+0.0
+1
+
+TEXTBOX
+424
+672
+574
+691
+Solutions buttons
+15
+0.0
+1
 
 @#$#@#$#@
 ## WHAT IS IT?
