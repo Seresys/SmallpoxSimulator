@@ -11,13 +11,12 @@ turtles-own [
   name
 ]
 
-; ask patches [ask (get-neighbors self) [if ground [set pcolor red]]]
-
 patches-own [
   ground
   sane-population
   immune-population
   dead-population
+  vaccinated-population
   contagious-population
   injected-by-click
   infected-list
@@ -36,7 +35,6 @@ globals [
   end-lethality
   start-remission
   end-remission
-  lethality-percent
   mouse-was-down?
 ]
 
@@ -101,20 +99,48 @@ to constants-setup
   set end-lethality 28
   set start-remission 29
   set end-remission 42
-  set lethality-percent 30
 end
 
 to mouse-manager
   let mouse-is-down? mouse-down?
   if mouse-clicked? [
-    infect-ground mouse-xcor mouse-ycor
+    if (action-on-click = "infect") [
+      infect-ground mouse-xcor mouse-ycor
+    ]
+    if (action-on-click = "vaccinate") [
+      vaccinate-ground mouse-xcor mouse-ycor
+    ]
+    if (action-on-click = "information") [
+      display-ground mouse-xcor mouse-ycor
+    ]
   ]
   set mouse-was-down? mouse-is-down?
 end
 
 to infect-ground [ x y ]
-  ask patches with [pxcor = round x and pycor = round y] [
+  ask patches with [pxcor = round x and pycor = round y and ground = true] [
     set injected-by-click infected-number-by-click
+  ]
+end
+
+to display-ground [ x y ]
+  ask patches with [pxcor = round x and pycor = round y and ground = true] [
+    output-type "Information for patch on " output-type pxcor output-type ", " output-print pycor
+    output-type "Total population : "  output-print round(get-total-population)
+    output-type "Sane population : "  output-type round(sane-population) output-type " (" output-type round(get-ratio-sane-patch * 100) output-print "%)"
+    output-type "Infected population : "  output-type round(get-infected-population) output-type " (" output-type round(get-ratio-infected-patch * 100) output-print "%)"
+    output-type "Immune population : "  output-type round(immune-population) output-type " (" output-type round(get-ratio-immune-patch * 100) output-print "%)"
+    output-type "Vaccinated population : "  output-type round(vaccinated-population) output-type " (" output-type round(get-ratio-vaccinated-patch * 100) output-print "%)"
+    output-type "Dead population : "  output-type round(dead-population) output-type " (" output-type round(get-ratio-dead-patch * 100) output-print "%)"
+    output-print "============="
+  ]
+end
+
+to vaccinate-ground [ x y ]
+  ask patches with [((((pxcor - x) * (pxcor - x)) + ((pycor - y) * (pycor - y))) <= (vaccin-radius * vaccin-radius)) and ground = true] [
+    let nb-vaccinated round(sane-population * vaccinated-percentage / 100)
+    set sane-population sane-population - nb-vaccinated
+    set vaccinated-population vaccinated-population + nb-vaccinated
   ]
 end
 
@@ -144,6 +170,7 @@ to init-patch
   set contagious-population 0
   set dead-population 0
   set infected-population 0
+  set vaccinated-population 0
   set infected-list (list)
   set death-by-day-list (list)
 end
@@ -216,7 +243,7 @@ end
 
 to update-color
   if(population-type-to-show = "infected")[
-    let color-value round(255 - 55 + (200 * get-ratio-infected-patch))
+    let color-value round(255 - (55 + (200 * get-ratio-infected-patch)))
     if (color-value = 200)[
       set color-value 255
     ]
@@ -229,26 +256,43 @@ to update-color
   ]
 
   if(population-type-to-show = "immune")[
-    let color-value round(255 - 55 + (200 * get-ratio-immune-patch))
+    let color-value round(255 - (55 + (200 * get-ratio-immune-patch)))
     if (color-value = 200)[
       set color-value 255
     ]
     set pcolor rgb color-value 255 color-value
   ]
+  if(population-type-to-show = "vaccinated")[
+    let color-value round(255 - (55 + (200 * get-ratio-vaccinated-patch)))
+    if (color-value = 200)[
+      set color-value 255
+    ]
+    set pcolor rgb color-value color-value 255
+  ]
 end
 
 to-report get-ratio-infected-patch
-  let total-population infected-population + get-uninfected-population + dead-population
+  report infected-population / get-total-population
 end
 
 to-report get-ratio-dead-patch
-  let total-population infected-population + get-uninfected-population + dead-population
-  report dead-population / total-population
+  report dead-population / get-total-population
 end
 
 to-report get-ratio-immune-patch
-  let total-population infected-population + get-uninfected-population + dead-population
-  report immune-population / total-population
+  report immune-population / get-total-population
+end
+
+to-report get-ratio-sane-patch
+  report sane-population / get-total-population
+end
+
+to-report get-ratio-vaccinated-patch
+  report vaccinated-population / get-total-population
+end
+
+to-report get-total-population
+  report infected-population + get-uninfected-population + dead-population + vaccinated-population
 end
 
 to-report get-infected-today
@@ -274,15 +318,15 @@ end
 
 to-report get-infected-by-neighbours
   let neighbours get-neighbors
-  let population-neighbor get-uninfected-population + dead-population
+  let population-neighbor get-uninfected-population + dead-population + vaccinated-population
   let contagious-neighbor get-contagious-population
 
   ask neighbours [
-    set population-neighbor population-neighbor + get-uninfected-population + dead-population
+    set population-neighbor population-neighbor + get-uninfected-population + dead-population + vaccinated-population
     set contagious-neighbor contagious-neighbor + get-contagious-population
   ]
 
-  let density (get-infected-population + get-uninfected-population + dead-population) / max-population
+  let density (get-infected-population + get-uninfected-population + dead-population + vaccinated-population) / max-population
 
   report (contagion-rate / 100) * (contagious-neighbor / population-neighbor) * density
 end
@@ -320,8 +364,9 @@ to infect-transport [threshold]
   let ratio 0
   let x xcor
   let y ycor
+
   ask patches with [pxcor = round x and pycor = round y] [
-    set ratio get-contagious-population / get-uninfected-population * 100
+    set ratio get-contagious-population / (get-uninfected-population + vaccinated-population)* 100
   ]
   if ( ratio > threshold) [
     set infected true
@@ -395,7 +440,6 @@ end
 
 to ports-setup
   create-ports 1 [ port-setup "Vancouver" 41 -24 ]
-  create-ports 1 [ port-setup "Montréal" 76 -27 ]
   create-ports 1 [ port-setup "Valparaiso" 75 -104 ]
   create-ports 1 [ port-setup "Vigo" 125 -32 ]
   create-ports 1 [ port-setup "Rotterdam" 135 -24 ]
@@ -409,7 +453,7 @@ to ports-setup
   create-ports 1 [ port-setup "Durban" 156 -97 ]
   create-ports 1 [ port-setup "Dubai" 174 -50 ]
   create-ports 1 [ port-setup "Seattle" 41 -30 ]
-  create-ports 1 [ port-setup "Le Pirée" 149 -37 ]
+  create-ports 1 [ port-setup "Le Pirée" 148 -37 ]
   create-ports 1 [ port-setup "Erdemir" 156 -34 ]
   create-ports 1 [ port-setup "Mundra" 187 -52 ]
   create-ports 1 [ port-setup "Kaohsiung" 228 -51 ]
@@ -441,7 +485,7 @@ to ports-setup
   create-ports 1 [ port-setup "Recife" 100 -80 ]
   create-ports 1 [ port-setup "Belem" 93 -76 ]
   create-ports 1 [ port-setup "Cartagena" 70 -63 ]
-  create-ports 1 [ port-setup "Acapulco" 48 -56 ]
+  create-ports 1 [ port-setup "Acapulco" 49 -56 ]
   create-ports 1 [ port-setup "Anchorage" 37 -17 ]
   create-ports 1 [ port-setup "Toamasina" 169 -90 ]
   create-ports 1 [ port-setup "Port Saïd" 155 -44 ]
@@ -451,6 +495,7 @@ end
 
 to airports-setup
   create-airports 1 [ airport-setup "Paris" 133 -29 ]
+  create-airports 1 [ port-setup "Montréal" 76 -27 ]
   create-airports 1 [ airport-setup "New-York" 71 -38 ]
   create-airports 1 [ airport-setup "Los Angeles" 39 -42 ]
   create-airports 1 [ airport-setup "Rio de Janeiro" 95 -92 ]
@@ -502,7 +547,7 @@ to airports-setup
   create-airports 1 [ airport-setup "Caracas" 79 -64 ]
   create-airports 1 [ airport-setup "Bogota" 71 -70 ]
   create-airports 1 [ airport-setup "Vienne" 144 -27 ]
-  create-airports 1 [ airport-setup "Jeddah" 162 -52 ]
+  create-airports 1 [ airport-setup "Jeddah" 163 -52 ]
   create-airports 1 [ airport-setup "Los Angeles" 39 -42 ]
 
 end
@@ -528,9 +573,9 @@ to port-setup [portName x y]
 end
 @#$#@#$#@
 GRAPHICS-WINDOW
-403
+418
 16
-1841
+1856
 655
 -1
 -1
@@ -555,10 +600,10 @@ ticks
 30.0
 
 BUTTON
-22
-235
-85
-268
+24
+119
+87
+152
 Start
 go
 T
@@ -572,40 +617,40 @@ NIL
 0
 
 SLIDER
-424
-750
-596
-783
+145
+570
+270
+603
 boat-speed
 boat-speed
 0.1
 0.5
-0.5
+0.45
 0.05
 1
 NIL
 HORIZONTAL
 
 SLIDER
-424
-706
-596
-739
+16
+570
+140
+603
 boat-max-number
 boat-max-number
 0
 100
-45.0
+46.0
 1
 1
 NIL
 HORIZONTAL
 
 SLIDER
-660
-705
-832
-738
+16
+607
+140
+640
 plane-max-number
 plane-max-number
 0
@@ -617,10 +662,10 @@ NIL
 HORIZONTAL
 
 SLIDER
-660
-749
-832
-782
+145
+607
+270
+640
 plane-speed
 plane-speed
 0.1
@@ -632,10 +677,10 @@ NIL
 HORIZONTAL
 
 BUTTON
-97
-236
-161
-269
+99
+120
+163
+153
 Setup
 setup
 NIL
@@ -649,10 +694,10 @@ NIL
 1
 
 SWITCH
-901
-707
-1065
-740
+276
+607
+415
+640
 allow-air-traffic
 allow-air-traffic
 0
@@ -660,10 +705,10 @@ allow-air-traffic
 -1000
 
 SWITCH
-901
-748
-1059
-781
+276
+570
+415
+603
 allow-water-traffic
 allow-water-traffic
 0
@@ -672,9 +717,9 @@ allow-water-traffic
 
 BUTTON
 23
-189
+80
 163
-222
+113
 Hide/Show Airways
 ask airways [set hidden? not hidden?]
 NIL
@@ -689,9 +734,9 @@ NIL
 
 BUTTON
 23
-150
+41
 180
-183
+74
 Hide/Show Waterways
 ask waterways [set hidden? not hidden?]
 NIL
@@ -705,10 +750,10 @@ NIL
 1
 
 SLIDER
-18
-391
-272
-424
+19
+345
+273
+378
 infected-number-by-click
 infected-number-by-click
 1
@@ -720,10 +765,10 @@ persons
 HORIZONTAL
 
 SLIDER
-18
-442
-190
-475
+20
+411
+192
+444
 contagion-rate
 contagion-rate
 0
@@ -735,40 +780,10 @@ contagion-rate
 HORIZONTAL
 
 SLIDER
-22
-60
-254
-93
-min-population-by-patch
-min-population-by-patch
-1
-400000
-200922.0
-1
-1
-persons
-HORIZONTAL
-
-SLIDER
-22
-104
-254
-137
-max-population-by-patch
-max-population-by-patch
-800000
-1200000
-1000000.0
-1
-1
-persons
-HORIZONTAL
-
-SLIDER
-1133
-706
-1350
-739
+233
+680
+450
+713
 plane-contagion-threshold
 plane-contagion-threshold
 0
@@ -780,10 +795,10 @@ plane-contagion-threshold
 HORIZONTAL
 
 SLIDER
-1135
-752
-1347
-785
+14
+680
+226
+713
 boat-contagion-threshold
 boat-contagion-threshold
 0
@@ -795,42 +810,174 @@ boat-contagion-threshold
 HORIZONTAL
 
 CHOOSER
-21
-279
-183
-324
+203
+41
+365
+86
 population-type-to-show
 population-type-to-show
-"infected" "dead" "immune"
-1
+"infected" "dead" "immune" "vaccinated"
+0
 
 TEXTBOX
-26
-32
-176
-51
+27
+10
+177
+29
 Setup buttons
 15
 0.0
 1
 
 TEXTBOX
-23
-356
-206
-394
+22
+299
+205
+337
 Infection setup buttons
 15
 0.0
 1
 
 TEXTBOX
-424
-672
-574
-691
+19
+527
+169
+546
 Solutions buttons
 15
+0.0
+1
+
+SLIDER
+19
+477
+191
+510
+lethality-percent
+lethality-percent
+0
+100
+38.0
+1
+1
+%
+HORIZONTAL
+
+TEXTBOX
+22
+327
+275
+355
+Number of person to infect when clicking on a patch
+11
+0.0
+1
+
+TEXTBOX
+22
+394
+172
+412
+Contagiousness of the disease
+11
+0.0
+1
+
+TEXTBOX
+21
+461
+290
+479
+Percentage of people infected dying from the disease
+11
+0.0
+1
+
+CHOOSER
+203
+94
+341
+139
+action-on-click
+action-on-click
+"infect" "vaccinate" "information"
+1
+
+OUTPUT
+24
+187
+363
+288
+11
+
+SLIDER
+230
+734
+447
+767
+vaccin-radius
+vaccin-radius
+1
+20
+10.0
+1
+1
+patches
+HORIZONTAL
+
+SLIDER
+11
+734
+224
+767
+vaccinated-percentage
+vaccinated-percentage
+0
+100
+49.0
+1
+1
+%
+HORIZONTAL
+
+TEXTBOX
+25
+163
+175
+182
+Patch information
+15
+0.0
+1
+
+TEXTBOX
+17
+551
+167
+569
+Water and air traffic
+11
+0.0
+1
+
+TEXTBOX
+12
+719
+162
+737
+Vaccination
+11
+0.0
+1
+
+TEXTBOX
+16
+663
+477
+681
+Boat and plane are considered infected above this threshold of population on departure patch
+11
 0.0
 1
 
