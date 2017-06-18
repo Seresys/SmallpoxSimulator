@@ -364,7 +364,6 @@ to infect-transport [threshold]
   let ratio 0
   let x xcor
   let y ycor
-
   ask patches with [pxcor = round x and pycor = round y] [
     set ratio get-contagious-population / (get-uninfected-population + vaccinated-population)* 100
   ]
@@ -912,9 +911,9 @@ OUTPUT
 11
 
 SLIDER
-230
+233
 734
-447
+450
 767
 vaccin-radius
 vaccin-radius
@@ -927,9 +926,9 @@ patches
 HORIZONTAL
 
 SLIDER
-11
+14
 734
-224
+227
 767
 vaccinated-percentage
 vaccinated-percentage
@@ -962,9 +961,9 @@ Water and air traffic
 1
 
 TEXTBOX
-12
+15
 719
-162
+165
 737
 Vaccination
 11
