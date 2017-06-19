@@ -702,6 +702,8 @@ to waypoints-setup
   create-waypoints 1 [ waypoint-setup 105 252 -44 [104 106] ]
   create-waypoints 1 [ waypoint-setup 106 263 -43 [105 107] ]
   create-waypoints 1 [ waypoint-setup 107 276 -44 [5 106] ]
+  ask one-of waypoints with [id = 14] [ create-waterways-with other waypoints with [id = 15] [hide-link] ]
+  ask one-of waypoints with [id = 36] [ create-waterways-with other waypoints with [id = 37] [hide-link] ]
 end
 
 to airport-setup [airportName x y]
@@ -721,7 +723,7 @@ to port-setup [portName x y]
   set shape "triangle"
   set color black
   set size 3
-  create-waterways-with other ports [ hide-link ]
+
 end
 
 to waypoint-setup [waypointId x y neighborList]
@@ -730,6 +732,8 @@ to waypoint-setup [waypointId x y neighborList]
   set id waypointId
   set label id
   set neighbor-list neighborList
+  ;set hidden? true
+  foreach neighbor-list [neighbor -> create-waterways-with other waypoints with [ id = neighbor] [ hide-link ]]
 end
 
 
@@ -900,7 +904,7 @@ BUTTON
 180
 74
 Hide/Show Waterways
-ask waypoints [ hidden? not hidden? ]
+ask waterways [ set hidden? not hidden? ]
 NIL
 1
 T
