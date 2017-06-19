@@ -4,6 +4,8 @@ breed [ground-patches ground-patch]
 breed [planes plane]
 breed [boats boat]
 
+breed [waypoints waypoint]
+
 undirected-link-breed [ airways airway ]
 undirected-link-breed [ waterways waterway ]
 
@@ -50,6 +52,14 @@ boats-own [
   arrival
   infected
   transport-ratio
+  current-waypoint
+  last-waypoint
+  arrival-waypoint
+]
+
+waypoints-own [
+  id
+  neighbor-list
 ]
 
 to setup
@@ -62,6 +72,7 @@ to setup
   ground-setup
   airports-setup
   ports-setup
+  waypoints-setup
   if (allow-air-traffic) [
     planes-setup
   ]
@@ -414,14 +425,50 @@ to boat-setup
     set arrival one-of ports
   ]
 
+  set current-waypoint get-nearest-waypoint-from departure
+  set arrival-waypoint get-nearest-waypoint-from arrival
+  set last-waypoint 0
   move-to departure
-  set heading towards arrival
   infect-transport boat-contagion-threshold
 end
 
+to-report get-nearest-waypoint-from [turtle-point]
+  report min-one-of waypoints [distance turtle-point]
+end
+
 to boat-go
+  ;; constantly move the boat
   fd boat-speed
-  if distance arrival < 1 [
+  if current-waypoint = 0 [ set current-waypoint get-nearest-waypoint-from last-waypoint ]
+  set heading towards current-waypoint
+  let distance-to-arrival distance arrival
+  ;; check if boat is on the nearest waypoint to destination
+  if current-waypoint != arrival-waypoint and current-waypoint != arrival and distance current-waypoint < 1 [
+    let waypoint-to-go 0
+    let arrival-to-go arrival
+    let min-distance 10000
+    let supposed-last last-waypoint
+    ;; for each neighbor of the current waypoint
+    foreach [neighbor-list] of current-waypoint [ neighbor ->
+      ask one-of waypoints with [id = neighbor][
+        ;; if the destination differs from the last-waypoint (no loops)
+        if supposed-last = 0 or [id] of supposed-last != neighbor [
+          ;; we select the nearest to the arrival (most-likely the best road)
+          if (distance arrival-to-go < min-distance) [
+            set min-distance distance arrival-to-go
+            set waypoint-to-go one-of waypoints with [id = neighbor]
+          ]
+        ]
+      ]
+    ]
+    set last-waypoint current-waypoint
+    set current-waypoint waypoint-to-go
+  ]
+  if current-waypoint = arrival-waypoint and distance current-waypoint < 1 [
+    set current-waypoint arrival
+  ]
+  ;; launch arrival procedure
+  if distance-to-arrival < 1 [
     infect-arrival
     die
   ]
@@ -548,7 +595,113 @@ to airports-setup
   create-airports 1 [ airport-setup "Vienne" 144 -27 ]
   create-airports 1 [ airport-setup "Jeddah" 163 -52 ]
   create-airports 1 [ airport-setup "Los Angeles" 39 -42 ]
+end
 
+to waypoints-setup
+  create-waypoints 1 [ waypoint-setup 1 33 -23 [2] ]
+  create-waypoints 1 [ waypoint-setup 2 30 -33 [1 3] ]
+  create-waypoints 1 [ waypoint-setup 3 33 -46 [2 4 6] ]
+  create-waypoints 1 [ waypoint-setup 4 18 -46 [3 5] ]
+  create-waypoints 1 [ waypoint-setup 5 6 -46 [107 4] ]
+  create-waypoints 1 [ waypoint-setup 6 39 -57 [3 7] ]
+  create-waypoints 1 [ waypoint-setup 7 50 -65 [6 8] ]
+  create-waypoints 1 [ waypoint-setup 8 60 -72 [30 7 9] ]
+  create-waypoints 1 [ waypoint-setup 9 60 -83 [8 10] ]
+  create-waypoints 1 [ waypoint-setup 10 66 -90 [9 15 16] ]
+  create-waypoints 1 [ waypoint-setup 11 3 -94 [86 12] ]
+  create-waypoints 1 [ waypoint-setup 12 14 -94 [11 13] ]
+  create-waypoints 1 [ waypoint-setup 13 28 -94 [12 14] ]
+  create-waypoints 1 [ waypoint-setup 14 40 -94 [13 15] ]
+  create-waypoints 1 [ waypoint-setup 15 54 -94 [9 16] ]
+  create-waypoints 1 [ waypoint-setup 16 71 -99 [10 17] ]
+  create-waypoints 1 [ waypoint-setup 17 70 -109 [16 18] ]
+  create-waypoints 1 [ waypoint-setup 18 72 -118 [17 19] ]
+  create-waypoints 1 [ waypoint-setup 19 78 -124 [18 20] ]
+  create-waypoints 1 [ waypoint-setup 20 89 -124 [19 21] ]
+  create-waypoints 1 [ waypoint-setup 21 88 -118 [20 22] ]
+  create-waypoints 1 [ waypoint-setup 22 93 -109 [21 23] ]
+  create-waypoints 1 [ waypoint-setup 23 100 -103 [22 24] ]
+  create-waypoints 1 [ waypoint-setup 24 104 -94 [23 25] ]
+  create-waypoints 1 [ waypoint-setup 25 108 -84 [26 24] ]
+  create-waypoints 1 [ waypoint-setup 26 106 -75 [57 58 25 27] ]
+  create-waypoints 1 [ waypoint-setup 27 98 -69 [26 28] ]
+  create-waypoints 1 [ waypoint-setup 28 89 -63 [27 29] ]
+  create-waypoints 1 [ waypoint-setup 29 82 -60 [28 30 33] ]
+  create-waypoints 1 [ waypoint-setup 30 68 -58 [29 31] ]
+  create-waypoints 1 [ waypoint-setup 31 59 -50 [32 30] ]
+  create-waypoints 1 [ waypoint-setup 32 71 -50 [33 31 29] ]
+  create-waypoints 1 [ waypoint-setup 33 80 -42 [32 34 29] ]
+  create-waypoints 1 [ waypoint-setup 34 89 -36 [33 35] ]
+  create-waypoints 1 [ waypoint-setup 35 99 -35 [34 36] ]
+  create-waypoints 1 [ waypoint-setup 36 108 -34 [35 37] ]
+  create-waypoints 1 [ waypoint-setup 37 117 -33 [38 47] ]
+  create-waypoints 1 [ waypoint-setup 38 124 -28 [37 39] ]
+  create-waypoints 1 [ waypoint-setup 39 130 -26 [38 40] ]
+  create-waypoints 1 [ waypoint-setup 40 136 -23 [39 43] ]
+  create-waypoints 1 [ waypoint-setup 43 135 -13 [40 44] ]
+  create-waypoints 1 [ waypoint-setup 44 142 -8 [43 45] ]
+  create-waypoints 1 [ waypoint-setup 45 151 -7 [44] ]
+  create-waypoints 1 [ waypoint-setup 47 123 -38 [48 55] ]
+  create-waypoints 1 [ waypoint-setup 48 131 -38 [47 49] ]
+  create-waypoints 1 [ waypoint-setup 49 138 -37 [48 50] ]
+  create-waypoints 1 [ waypoint-setup 50 145 -40 [49 51] ]
+  create-waypoints 1 [ waypoint-setup 51 153 -41 [50 52] ]
+  create-waypoints 1 [ waypoint-setup 52 159 -48 [51 53] ]
+  create-waypoints 1 [ waypoint-setup 53 163 -55 [52 54] ]
+  create-waypoints 1 [ waypoint-setup 54 169 -60 [53 71] ]
+  create-waypoints 1 [ waypoint-setup 55 115 -45 [47 56] ]
+  create-waypoints 1 [ waypoint-setup 56 111 -54 [55 57] ]
+  create-waypoints 1 [ waypoint-setup 57 113 -65 [56 58 26] ]
+  create-waypoints 1 [ waypoint-setup 58 121 -72 [57 59] ]
+  create-waypoints 1 [ waypoint-setup 59 131 -72 [58 60] ]
+  create-waypoints 1 [ waypoint-setup 60 136 -80 [59 61] ]
+  create-waypoints 1 [ waypoint-setup 61 136 -90 [60 62] ]
+  create-waypoints 1 [ waypoint-setup 62 139 -99 [61 63] ]
+  create-waypoints 1 [ waypoint-setup 63 142 -107 [62 64] ]
+  create-waypoints 1 [ waypoint-setup 64 152 -110 [63 65] ]
+  create-waypoints 1 [ waypoint-setup 65 161 -104 [64 66] ]
+  create-waypoints 1 [ waypoint-setup 66 164 -97 [65 67] ]
+  create-waypoints 1 [ waypoint-setup 67 165 -88 [66 68] ]
+  create-waypoints 1 [ waypoint-setup 68 168 -79 [67 69 68] ]
+  create-waypoints 1 [ waypoint-setup 69 173 -73 [68 70] ]
+  create-waypoints 1 [ waypoint-setup 70 177 -65 [69 71 54] ]
+  create-waypoints 1 [ waypoint-setup 71 180 -58 [70 72] ]
+  create-waypoints 1 [ waypoint-setup 72 189 -58 [71 73] ]
+  create-waypoints 1 [ waypoint-setup 73 191 -65 [72 74] ]
+  create-waypoints 1 [ waypoint-setup 74 196 -72 [73 75] ]
+  create-waypoints 1 [ waypoint-setup 75 202 -66 [76 77 74] ]
+  create-waypoints 1 [ waypoint-setup 76 207 -61 [75] ]
+  create-waypoints 1 [ waypoint-setup 77 209 -74 [75 78] ]
+  create-waypoints 1 [ waypoint-setup 78 216 -81 [77 79] ]
+  create-waypoints 1 [ waypoint-setup 79 222 -84 [78 80] ]
+  create-waypoints 1 [ waypoint-setup 80 230 -86 [79 81] ]
+  create-waypoints 1 [ waypoint-setup 81 237 -83 [80 82 96] ]
+  create-waypoints 1 [ waypoint-setup 82 243 -83 [81 83] ]
+  create-waypoints 1 [ waypoint-setup 83 252 -85 [82 84] ]
+  create-waypoints 1 [ waypoint-setup 84 259 -94 [83 85 87] ]
+  create-waypoints 1 [ waypoint-setup 85 272 -92 [84 86] ]
+  create-waypoints 1 [ waypoint-setup 86 282 -91 [11 85] ]
+  create-waypoints 1 [ waypoint-setup 87 257 -102 [86 88] ]
+  create-waypoints 1 [ waypoint-setup 88 251 -109 [87 89] ]
+  create-waypoints 1 [ waypoint-setup 89 245 -116 [88 90] ]
+  create-waypoints 1 [ waypoint-setup 90 236 -113 [89 91] ]
+  create-waypoints 1 [ waypoint-setup 91 219 -109 [90 92] ]
+  create-waypoints 1 [ waypoint-setup 92 211 -96 [79 91 93] ]
+  create-waypoints 1 [ waypoint-setup 93 201 -94 [92 94] ]
+  create-waypoints 1 [ waypoint-setup 94 192 -92 [93 95] ]
+  create-waypoints 1 [ waypoint-setup 95 182 -89 [68 94] ]
+  create-waypoints 1 [ waypoint-setup 96 226 -79 [81 97] ]
+  create-waypoints 1 [ waypoint-setup 97 220 -75 [96 98] ]
+  create-waypoints 1 [ waypoint-setup 98 220 -67 [97 99] ]
+  create-waypoints 1 [ waypoint-setup 99 224 -60 [98 100] ]
+  create-waypoints 1 [ waypoint-setup 100 227 -54 [101 99] ]
+  create-waypoints 1 [ waypoint-setup 101 235 -50 [100 102 104] ]
+  create-waypoints 1 [ waypoint-setup 102 232 -41 [101 103] ]
+  create-waypoints 1 [ waypoint-setup 103 234 -34 [102] ]
+  create-waypoints 1 [ waypoint-setup 104 242 -44 [101 105] ]
+  create-waypoints 1 [ waypoint-setup 105 252 -44 [104 106] ]
+  create-waypoints 1 [ waypoint-setup 106 263 -43 [105 107] ]
+  create-waypoints 1 [ waypoint-setup 107 276 -44 [5 106] ]
 end
 
 to airport-setup [airportName x y]
@@ -570,6 +723,17 @@ to port-setup [portName x y]
   set size 3
   create-waterways-with other ports [ hide-link ]
 end
+
+to waypoint-setup [waypointId x y neighborList]
+  set xcor x
+  set ycor y
+  set id waypointId
+  set label id
+  set neighbor-list neighborList
+  set hidden? true
+end
+
+
 @#$#@#$#@
 GRAPHICS-WINDOW
 418
@@ -639,7 +803,7 @@ boat-max-number
 boat-max-number
 0
 100
-46.0
+82.0
 1
 1
 NIL
@@ -699,7 +863,7 @@ SWITCH
 640
 allow-air-traffic
 allow-air-traffic
-0
+1
 1
 -1000
 
@@ -737,7 +901,7 @@ BUTTON
 180
 74
 Hide/Show Waterways
-ask waterways [set hidden? not hidden?]
+ask waypoints [ set hidden? not hidden? ]
 NIL
 1
 T
@@ -901,7 +1065,7 @@ CHOOSER
 action-on-click
 action-on-click
 "infect" "vaccinate" "information"
-1
+0
 
 OUTPUT
 24
