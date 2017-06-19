@@ -38,6 +38,11 @@ globals [
   start-remission
   end-remission
   mouse-was-down?
+  total-sane-population
+  total-immune-population
+  total-dead-population
+  total-vaccinated-population
+  total-infected-population
 ]
 
 planes-own [
@@ -110,6 +115,11 @@ to constants-setup
   set end-lethality 28
   set start-remission 29
   set end-remission 42
+  set total-sane-population 0
+  set total-immune-population 0
+  set total-dead-population 0
+  set total-vaccinated-population 0
+  set total-infected-population 0
 end
 
 to mouse-manager
@@ -128,12 +138,14 @@ to mouse-manager
   set mouse-was-down? mouse-is-down?
 end
 
+;; Start the pandemy at the clicked patch
 to infect-ground [ x y ]
   ask patches with [pxcor = round x and pycor = round y and ground = true] [
     set injected-by-click infected-number-by-click
   ]
 end
 
+;; Print information of a clicked patch
 to display-ground [ x y ]
   ask patches with [pxcor = round x and pycor = round y and ground = true] [
     output-type "Information for patch on " output-type pxcor output-type ", " output-print pycor
@@ -147,23 +159,28 @@ to display-ground [ x y ]
   ]
 end
 
+;; Vaccinate population at the clicked patch in a defined radius
 to vaccinate-ground [ x y ]
   ask patches with [((((pxcor - x) * (pxcor - x)) + ((pycor - y) * (pycor - y))) <= (vaccin-radius * vaccin-radius)) and ground = true] [
     let nb-vaccinated round(sane-population * vaccinated-percentage / 100)
     set sane-population sane-population - nb-vaccinated
     set vaccinated-population vaccinated-population + nb-vaccinated
+    set total-vaccinated-population total-vaccinated-population + nb-vaccinated
   ]
 end
 
+;; Get the patches of the ground
 to-report grounds
   report patches with [ground = true]
 end
 
+;; Init sea patches
 to sea-setup
   ask patches [set pcolor blue]
   ask patches [set ground false]
 end
 
+;; Init ground patches
 to ground-setup
   import-pcolors "worldmap_foreground.png"
   ask patches [
@@ -177,6 +194,7 @@ end
 
 to init-patch
   set sane-population population-setup
+  set total-sane-population total-sane-population + sane-population
   set immune-population 0
   set contagious-population 0
   set dead-population 0
@@ -186,6 +204,7 @@ to init-patch
   set death-by-day-list (list)
 end
 
+;; Function called every tick on patch
 to ground-go
   let number-infected get-infected-today ;; new infected number
   let duration-lethality end-lethality - start-lethality + 1 ;; duration of lethality period
@@ -193,11 +212,14 @@ to ground-go
   set sane-population sane-population - number-infected ;; new number of sane population
   set infected-list fput number-infected infected-list ;; switch list to right by introducing new number of infected
   set infected-population infected-population + number-infected
+  set total-infected-population total-infected-population + number-infected
 
   ;; Adding new immune population + delete last element of infected
   if (length infected-list > end-remission + 1) [
     set immune-population immune-population + last infected-list
+    set total-immune-population total-immune-population + last infected-list
     set infected-population infected-population - last infected-list
+    set total-infected-population total-infected-population - last infected-list
     set infected-list but-last infected-list
   ]
 
@@ -227,7 +249,9 @@ to ground-go
     let death-by-day item index death-by-day-list
     let new-infected-number item (start-lethality + index) infected-list - death-by-day
     set infected-population infected-population - death-by-day
+    set total-infected-population total-infected-population - death-by-day
     set dead-population dead-population + death-by-day
+    set total-dead-population total-dead-population + death-by-day
 
     if new-infected-number < 0 [
       set new-infected-number 0
@@ -236,10 +260,12 @@ to ground-go
     set index index + 1
   ]
 
+  ;; Change the color of the patch
   update-color
 
 end
 
+;; Get populations depending on their type for a patch
 to-report get-uninfected-population
   report sane-population + immune-population
 end
@@ -252,6 +278,7 @@ to-report get-contagious-population
   report contagious-population
 end
 
+;; Change the color of the patch depending on the percentage of the population for a certain type
 to update-color
   if(population-type-to-show = "infected")[
     let color-value round(255 - (55 + (200 * get-ratio-infected-patch)))
@@ -282,6 +309,7 @@ to update-color
   ]
 end
 
+;; Get the ratio of a population for a patch
 to-report get-ratio-infected-patch
   report infected-population / get-total-population
 end
@@ -306,6 +334,7 @@ to-report get-total-population
   report infected-population + get-uninfected-population + dead-population + vaccinated-population
 end
 
+;; Compute how many person should be infected for this tick on the patch
 to-report get-infected-today
   if (sane-population <= 0 )[
     report 0
@@ -327,6 +356,7 @@ to-report get-infected-today
   report infected-today
 end
 
+;; Compute the ratio of person that should be infected depending on the neighbors and the current patch
 to-report get-infected-by-neighbours
   let neighbours get-neighbors
   let population-neighbor get-uninfected-population + dead-population + vaccinated-population
@@ -342,14 +372,17 @@ to-report get-infected-by-neighbours
   report (contagion-rate / 100) * (contagious-neighbor / population-neighbor) * density
 end
 
+;; Set the sane population a the start at a random value between 200 000 and 1 000 000
 to-report population-setup
   report rand min-population max-population
 end
 
+;; Get immediate neighbors of a patch
 to-report get-neighbors
   report (patch-set neighbors with [ground = true])
 end
 
+;; Init planes
 to planes-setup
   create-planes plane-max-number [ plane-setup ]
 end
@@ -366,11 +399,13 @@ to plane-setup
     set arrival one-of airports
   ]
   set infected false
+  set transport-ratio 0
   move-to departure
   set heading towards arrival
   infect-transport plane-contagion-threshold
 end
 
+;; Set a transport infected depending on the threshold defined and if the departure is infected.
 to infect-transport [threshold]
   let ratio 0
   let x xcor
@@ -385,6 +420,7 @@ to infect-transport [threshold]
   ]
 end
 
+;; Propogate the virus at the arrival
 to infect-arrival
   let x [xcor] of arrival
   let y [ycor] of arrival
@@ -395,6 +431,7 @@ to infect-arrival
   ]
 end
 
+;; Function on tick for the plane movement
 to plane-go
   fd plane-speed
   if distance arrival < 1 [
@@ -403,12 +440,14 @@ to plane-go
   ]
 end
 
+;; Keep a population of planes
 to respawn-planes
   if count(planes) < plane-max-number [
     create-planes plane-max-number - count(planes) [ plane-setup ]
   ]
 end
 
+;; Init boats
 to boats-setup
   create-boats boat-max-number [ boat-setup ]
 end
@@ -432,6 +471,7 @@ to boat-setup
   infect-transport boat-contagion-threshold
 end
 
+;; Function for boat movement
 to-report get-nearest-waypoint-from [turtle-point]
   report min-one-of waypoints [distance turtle-point]
 end
@@ -474,6 +514,7 @@ to boat-go
   ]
 end
 
+;; Keep a population of boats
 to respawn-boats
   if count(boats) < boat-max-number [
     create-boats boat-max-number - count(boats) [ boat-setup ]
@@ -734,7 +775,6 @@ to waypoint-setup [waypointId x y neighborList]
   set hidden? true
   foreach neighbor-list [neighbor -> create-waterways-with other waypoints with [ id = neighbor] [ hide-link ]]
 end
-
 @#$#@#$#@
 GRAPHICS-WINDOW
 418
@@ -804,7 +844,7 @@ boat-max-number
 boat-max-number
 0
 100
-82.0
+59.0
 1
 1
 NIL
@@ -875,7 +915,7 @@ SWITCH
 603
 allow-water-traffic
 allow-water-traffic
-1
+0
 1
 -1000
 
@@ -974,14 +1014,14 @@ boat-contagion-threshold
 HORIZONTAL
 
 CHOOSER
-203
-41
-365
-86
+198
+40
+360
+85
 population-type-to-show
 population-type-to-show
 "infected" "dead" "immune" "vaccinated"
-1
+0
 
 TEXTBOX
 27
@@ -1059,14 +1099,14 @@ Percentage of people infected dying from the disease
 1
 
 CHOOSER
-203
-94
-341
-139
+199
+120
+360
+165
 action-on-click
 action-on-click
 "infect" "vaccinate" "information"
-2
+0
 
 OUTPUT
 24
@@ -1128,9 +1168,9 @@ Water and air traffic
 TEXTBOX
 15
 719
-165
+256
 737
-Vaccination
+Vaccination of sane population
 11
 0.0
 1
@@ -1144,6 +1184,37 @@ Boat and plane are considered infected above this threshold of population on dep
 11
 0.0
 1
+
+TEXTBOX
+200
+84
+362
+112
+The darker the color, the higher the percentage is
+11
+0.0
+1
+
+PLOT
+493
+678
+826
+904
+Population evolution
+Number of tick
+Number of person
+0.0
+100.0
+0.0
+1000000.0
+true
+true
+"" ""
+PENS
+"Infected" 1.0 0 -2674135 true "" "plot total-infected-population"
+"Immune" 1.0 0 -10899396 true "" "plot total-immune-population"
+"Vaccinated" 1.0 0 -8630108 true "" "plot total-vaccinated-population"
+"Dead" 1.0 0 -16777216 true "" "plot total-dead-population"
 
 @#$#@#$#@
 ## WHAT IS IT?
