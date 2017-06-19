@@ -704,6 +704,8 @@ to waypoints-setup
   create-waypoints 1 [ waypoint-setup 107 276 -44 [5 106] ]
   ask one-of waypoints with [id = 14] [ create-waterways-with other waypoints with [id = 15] [hide-link] ]
   ask one-of waypoints with [id = 36] [ create-waterways-with other waypoints with [id = 37] [hide-link] ]
+  ask one-of waypoints with [id = 15] [ create-waterways-with other waypoints with [id = 10] [hide-link] ]
+  ask one-of waypoints with [id = 26] [ create-waterways-with other waypoints with [id = 58] [hide-link] ]
 end
 
 to airport-setup [airportName x y]
