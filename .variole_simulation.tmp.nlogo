@@ -70,8 +70,8 @@ to setup
   constants-setup
   sea-setup
   ground-setup
-
   airports-setup
+  ports-setup
   waypoints-setup
   if (allow-air-traffic) [
     planes-setup
@@ -493,11 +493,11 @@ to ports-setup
   create-ports 1 [ port-setup "Halifax" 85 -30 ]
   create-ports 1 [ port-setup "Houston" 54 -45 ]
   create-ports 1 [ port-setup "Los Angeles" 39 -42 ]
-  create-ports 1 [ port-setup "Singapour" 222 -71 ]
+  create-ports 1 [ port-setup "Singapour" 222 -74 ]
   create-ports 1 [ port-setup "South Louisiana" 61 -44 ]
   create-ports 1 [ port-setup "Charleston" 66 -42 ]
   create-ports 1 [ port-setup "Durban" 156 -97 ]
-  create-ports 1 [ port-setup "Dubai" 174 -50 ]
+  create-ports 1 [ port-setup "Dubai" 171 -50 ]
   create-ports 1 [ port-setup "Seattle" 41 -30 ]
   create-ports 1 [ port-setup "Le Pirée" 148 -37 ]
   create-ports 1 [ port-setup "Erdemir" 156 -34 ]
@@ -518,8 +518,7 @@ to ports-setup
   create-ports 1 [ port-setup "Le Cap" 146 -103 ]
   create-ports 1 [ port-setup "Jakarta" 221 -80 ]
   create-ports 1 [ port-setup "Colombo" 197 -66 ]
-  create-ports 1 [ port-setup "Port Saïd" 155 -44 ]
-  create-ports 1 [ port-setup "Alexandrie" 151 -43 ]
+  create-ports 1 [ port-setup "Alexandrie" 149 -43 ]
   create-ports 1 [ port-setup "Reykjavik" 118 -14 ]
   create-ports 1 [ port-setup "Murmansk" 152 -10 ]
   create-ports 1 [ port-setup "Karachi" 182 -48 ]
@@ -534,35 +533,34 @@ to ports-setup
   create-ports 1 [ port-setup "Acapulco" 49 -56 ]
   create-ports 1 [ port-setup "Anchorage" 37 -17 ]
   create-ports 1 [ port-setup "Toamasina" 169 -90 ]
-  create-ports 1 [ port-setup "Port Saïd" 155 -44 ]
   create-ports 1 [ port-setup "La Havane" 66 -52 ]
   create-ports 1 [ port-setup "Port Moresby" 253 -82 ]
 end
 
 to airports-setup
   create-airports 1 [ airport-setup "Paris" 133 -29 ]
-  create-airports 1 [ port-setup "Montréal" 76 -27 ]
+  create-airports 1 [ airport-setup "Montréal" 76 -27 ]
   create-airports 1 [ airport-setup "New-York" 71 -38 ]
-  create-airports 1 [ airport-setup "Los Angeles" 39 -42 ]
+
   create-airports 1 [ airport-setup "Rio de Janeiro" 95 -92 ]
-  create-airports 1 [ airport-setup "Buenos Aires" 86 -104 ]
-  create-airports 1 [ airport-setup "Dakar" 117 -52 ]
+  create-airports 1 [ airport-setup "Buenos Aires" 86 -101 ]
+  create-airports 1 [ airport-setup "Dakar" 120 -52 ]
   create-airports 1 [ airport-setup "Madrid" 127 -35 ]
   create-airports 1 [ airport-setup "Rome" 141 -34 ]
   create-airports 1 [ airport-setup "Berlin" 140 -25 ]
   create-airports 1 [ airport-setup "Stockholm" 143 -17 ]
   create-airports 1 [ airport-setup "Moscou" 165 -22 ]
   create-airports 1 [ airport-setup "Istanbul" 152 -35 ]
-  create-airports 1 [ airport-setup "Londres" 131 -25 ]
+  create-airports 1 [ airport-setup "Londres" 129 -24 ]
   create-airports 1 [ airport-setup "Dublin" 126 -23 ]
   create-airports 1 [ airport-setup "Mumbai" 190 -55 ]
   create-airports 1 [ airport-setup "New Delhi" 194 -47 ]
-  create-airports 1 [ airport-setup "Le Caire" 155 -44 ]
+  create-airports 1 [ airport-setup "Le Caire" 152 -44 ]
   create-airports 1 [ airport-setup "Dubai" 174 -50 ]
-  create-airports 1 [ airport-setup "Hong-Kong" 221 -51 ]
+  create-airports 1 [ airport-setup "Hong-Kong" 218 -51 ]
   create-airports 1 [ airport-setup "Tokyo" 239 -39 ]
-  create-airports 1 [ airport-setup "Sidney" 248 -104 ]
-  create-airports 1 [ airport-setup "Le Cap" 146 -103 ]
+  create-airports 1 [ airport-setup "Sidney" 248 -101 ]
+  create-airports 1 [ airport-setup "Le Cap" 146 -100 ]
   create-airports 1 [ airport-setup "Johannesbourg" 154 -95 ]
   create-airports 1 [ airport-setup "Nairobi" 162 -69 ]
   create-airports 1 [ airport-setup "Accra" 132 -66 ]
@@ -570,21 +568,20 @@ to airports-setup
   create-airports 1 [ airport-setup "Wellington" 265 -109 ]
   create-airports 1 [ airport-setup "Ulan Bator" 209 -30 ]
   create-airports 1 [ airport-setup "Pékin" 220 -36 ]
-  create-airports 1 [ airport-setup "Shanghai" 226 -45 ]
-  create-airports 1 [ airport-setup "Melbourne" 242 -108 ]
-  create-airports 1 [ airport-setup "Brisbane" 252 -97 ]
+  create-airports 1 [ airport-setup "Shanghai" 223 -45 ]
+  create-airports 1 [ airport-setup "Melbourne" 242 -105 ]
+  create-airports 1 [ airport-setup "Brisbane" 249 -97 ]
   create-airports 1 [ airport-setup "Bali" 226 -81 ]
   create-airports 1 [ airport-setup "Singapour" 222 -71 ]
   create-airports 1 [ airport-setup "Bangkok" 213 -60 ]
-  create-airports 1 [ airport-setup "Los Angeles" 39 -42 ]
   create-airports 1 [ airport-setup "Manille" 229 -59 ]
   create-airports 1 [ airport-setup "Panama" 61 -63 ]
-  create-airports 1 [ airport-setup "Mexico" 49 -55 ]
+  create-airports 1 [ airport-setup "Mexico" 49 -53 ]
   create-airports 1 [ airport-setup "Brasilia" 92 -82 ]
   create-airports 1 [ airport-setup "Santiago" 75 -98 ]
   create-airports 1 [ airport-setup "La Paz" 78 -84 ]
   create-airports 1 [ airport-setup "Honolulu" 3 -55 ]
-  create-airports 1 [ airport-setup "Seattle" 41 -30 ]
+  create-airports 1 [ airport-setup "Seattle" 44 -30 ]
   create-airports 1 [ airport-setup "Toronto" 74 -30 ]
   create-airports 1 [ airport-setup "Denver" 47 -36 ]
   create-airports 1 [ airport-setup "Houston" 54 -45 ]
@@ -594,7 +591,7 @@ to airports-setup
   create-airports 1 [ airport-setup "Bogota" 71 -70 ]
   create-airports 1 [ airport-setup "Vienne" 144 -27 ]
   create-airports 1 [ airport-setup "Jeddah" 163 -52 ]
-  create-airports 1 [ airport-setup "Los Angeles" 39 -42 ]
+  create-airports 1 [ airport-setup "Los Angeles" 39 -39 ]
 end
 
 to waypoints-setup
@@ -712,7 +709,8 @@ to airport-setup [airportName x y]
   set xcor x
   set ycor y
   set name airportName
-  set shape "star"
+  set shape "airport"
+  set heading 45
   set color grey
   set size 3
   create-airways-with other airports [ hide-link ]
@@ -722,10 +720,10 @@ to port-setup [portName x y]
   set xcor x
   set ycor y
   set name portName
-  set shape "triangle"
+  set shape "port"
   set color black
   set size 3
-
+  set heading 0
 end
 
 to waypoint-setup [waypointId x y neighborList]
@@ -822,7 +820,7 @@ plane-max-number
 plane-max-number
 0
 100
-56.0
+91.0
 1
 1
 NIL
@@ -878,7 +876,7 @@ SWITCH
 603
 allow-water-traffic
 allow-water-traffic
-0
+1
 1
 -1000
 
@@ -984,7 +982,7 @@ CHOOSER
 population-type-to-show
 population-type-to-show
 "infected" "dead" "immune" "vaccinated"
-0
+1
 
 TEXTBOX
 27
@@ -1069,7 +1067,7 @@ CHOOSER
 action-on-click
 action-on-click
 "infect" "vaccinate" "information"
-0
+2
 
 OUTPUT
 24
@@ -1194,6 +1192,12 @@ airplane
 true
 0
 Polygon -7500403 true true 150 0 135 15 120 60 120 105 15 165 15 195 120 180 135 240 105 270 120 285 150 270 180 285 210 270 165 240 180 180 285 195 285 165 180 105 180 60 165 15
+
+airport
+true
+0
+Circle -8630108 true false 0 0 300
+Polygon -1 true false 150 0 135 15 120 60 120 105 15 165 15 195 120 180 135 240 105 270 120 285 150 270 180 285 210 270 165 240 180 180 285 195 285 165 180 105 180 60 165 15
 
 arrow
 true
@@ -1381,6 +1385,13 @@ Polygon -7500403 true true 165 180 165 210 225 180 255 120 210 135
 Polygon -7500403 true true 135 105 90 60 45 45 75 105 135 135
 Polygon -7500403 true true 165 105 165 135 225 105 255 45 210 60
 Polygon -7500403 true true 135 90 120 45 150 15 180 45 165 90
+
+port
+true
+0
+Circle -5825686 true false -1 -1 301
+Polygon -1 true false 0 150 30 195 60 225 120 255 150 300 180 255 240 225 300 150 225 210 180 210 165 195 165 30 135 30 135 195 120 210 75 210
+Circle -1 true false 120 0 60
 
 sheep
 false
