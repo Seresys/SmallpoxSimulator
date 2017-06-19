@@ -57,14 +57,18 @@ boats-own [
   arrival
   infected
   transport-ratio
-  current-waypoint
-  last-waypoint
-  arrival-waypoint
+  path
+  path-size
+  current-waypoint-index
 ]
 
 waypoints-own [
   id
   neighbor-list
+  g
+  h
+  f
+  parent-patch
 ]
 
 to setup
@@ -431,7 +435,7 @@ to infect-arrival
   ]
 end
 
-;; Function on tick for the plane deplacement
+;; Function on tick for the plane movement
 to plane-go
   fd plane-speed
   if distance arrival < 1 [
@@ -440,13 +444,14 @@ to plane-go
   ]
 end
 
-;; K
+;; Keep a population of planes
 to respawn-planes
   if count(planes) < plane-max-number [
     create-planes plane-max-number - count(planes) [ plane-setup ]
   ]
 end
 
+;; Init boats
 to boats-setup
   create-boats boat-max-number [ boat-setup ]
 end
@@ -463,13 +468,13 @@ to boat-setup
     set arrival one-of ports
   ]
 
-  set current-waypoint get-nearest-waypoint-from departure
-  set arrival-waypoint get-nearest-waypoint-from arrival
-  set last-waypoint 0
   move-to departure
+  set current-waypoint-index 0
+  get-boat-path
   infect-transport boat-contagion-threshold
 end
 
+;; Function for boat movement
 to-report get-nearest-waypoint-from [turtle-point]
   report min-one-of waypoints [distance turtle-point]
 end
@@ -477,41 +482,123 @@ end
 to boat-go
   ;; constantly move the boat
   fd boat-speed
-  if current-waypoint = 0 [ set current-waypoint get-nearest-waypoint-from last-waypoint ]
+  let point-id item current-waypoint-index path
+  let current-waypoint 0
+  let distance-to-waypoint 0
+  if length path = 1 [
+    move-to arrival
+    infect-arrival
+    die
+  ]
+  if current-waypoint-index = length path - 1 [ set current-waypoint arrival ]
+  if current-waypoint-index < length path - 1 [ set current-waypoint point-id ]
+
   set heading towards current-waypoint
-  let distance-to-arrival distance arrival
+  set distance-to-waypoint distance current-waypoint
+
   ;; check if boat is on the nearest waypoint to destination
-  if current-waypoint != arrival-waypoint and current-waypoint != arrival and distance current-waypoint < 1 [
-    let waypoint-to-go 0
-    let arrival-to-go arrival
-    let min-distance 10000
-    let supposed-last last-waypoint
-    ;; for each neighbor of the current waypoint
-    foreach [neighbor-list] of current-waypoint [ neighbor ->
-      ask one-of waypoints with [id = neighbor][
-        ;; if the destination differs from the last-waypoint (no loops)
-        if supposed-last = 0 or [id] of supposed-last != neighbor [
-          ;; we select the nearest to the arrival (most-likely the best road)
-          if (distance arrival-to-go < min-distance) [
-            set min-distance distance arrival-to-go
-            set waypoint-to-go one-of waypoints with [id = neighbor]
+  if (distance-to-waypoint < 1 and current-waypoint-index < length path - 1) [
+    set current-waypoint-index current-waypoint-index + 1
+  ]
+  if current-waypoint = arrival and distance arrival < 1 [
+   infect-arrival
+   die
+  ]
+
+end
+
+to get-boat-path
+  set path-size count(waypoints)
+  set path []
+  let departure-waypoint get-nearest-waypoint-from departure
+  let departure-id [id] of departure-waypoint
+  let arrival-waypoint get-nearest-waypoint-from arrival
+  let arrival-id [id] of arrival-waypoint
+  set path find-a-star-path departure-waypoint arrival-waypoint
+  set path lput arrival path
+end
+
+; Find the shortest path with A*
+to-report find-a-star-path[source destination]
+  let closed []
+  let open []
+  let search-path []
+  let search-done? false
+  let current-patch 0
+
+  set open lput source open
+
+  ask source
+  [
+    set g 0
+    set h distance destination
+    set f (g + h)
+  ]
+
+  while [search-done? != true]
+  [
+    ifelse length open != 0
+    [
+      ;output-show(length open)
+      set open sort-by [[patch1 patch2] -> [f] of patch1 < [f] of patch2] open
+
+      set current-patch first open
+      set open but-first open ;remove the first item
+      set closed lput current-patch closed ;push the current patch in the path
+
+      ask current-patch
+      [
+        ifelse member? [id] of destination neighbor-list
+        [
+          set search-done? true
+          ;output-print("TEST found")
+        ]
+        [
+          foreach neighbor-list [ n ->
+            let neighbor-waypoint one-of waypoints with [ id = n ]
+            if not member? neighbor-waypoint closed and neighbor-waypoint != parent-patch and not member? neighbor-waypoint open and neighbor-waypoint != source and neighbor-waypoint != destination
+            [
+              set open lput neighbor-waypoint open ; add the eligible patch to the open list
+              ask neighbor-waypoint [
+                set parent-patch current-patch
+                set g [g] of parent-patch + 1
+                set h distance destination
+                set f (g + h)
+              ]
+            ]
           ]
         ]
       ]
     ]
-    set last-waypoint current-waypoint
-    set current-waypoint waypoint-to-go
+    [
+      report []
+    ]
   ]
-  if current-waypoint = arrival-waypoint and distance current-waypoint < 1 [
-    set current-waypoint arrival
+
+  ; if a path is found (search completed) add the current patch
+  ; (node adjacent to the destination) to the search path.
+  set search-path fput current-patch search-path
+
+  ; trace the search path from the current patch
+  ; all the way to the source patch using the parent patch
+  ; variable which was set during the search for every patch that was explored
+  let temp first search-path
+
+  while [ temp != source ]
+  [
+    ;output-show(temp)
+    set search-path fput [parent-patch] of temp search-path
+    set temp [parent-patch] of temp
   ]
-  ;; launch arrival procedure
-  if distance-to-arrival < 1 [
-    infect-arrival
-    die
-  ]
+
+  ; add the destination patch to the back of the search path
+  set search-path lput destination search-path
+
+  ; report the search path
+  report search-path
 end
 
+;; Keep a population of boats
 to respawn-boats
   if count(boats) < boat-max-number [
     create-boats boat-max-number - count(boats) [ boat-setup ]
@@ -769,7 +856,7 @@ to waypoint-setup [waypointId x y neighborList]
   set id waypointId
   set label id
   set neighbor-list neighborList
-  set hidden? true
+  ;;set hidden? true
   foreach neighbor-list [neighbor -> create-waterways-with other waypoints with [ id = neighbor] [ hide-link ]]
 end
 @#$#@#$#@
@@ -1195,7 +1282,7 @@ The darker the color, the higher the percentage is
 PLOT
 493
 678
-826
+1856
 904
 Population evolution
 Number of tick
