@@ -70,8 +70,8 @@ to setup
   constants-setup
   sea-setup
   ground-setup
+
   airports-setup
-  ports-setup
   waypoints-setup
   if (allow-air-traffic) [
     planes-setup
@@ -414,7 +414,7 @@ to boats-setup
 end
 
 to boat-setup
-  set shape "fish"
+  set shape "boat"
   set color black
   set size 3
 
@@ -734,10 +734,9 @@ to waypoint-setup [waypointId x y neighborList]
   set id waypointId
   set label id
   set neighbor-list neighborList
-  ;set hidden? true
+  set hidden? true
   foreach neighbor-list [neighbor -> create-waterways-with other waypoints with [ id = neighbor] [ hide-link ]]
 end
-
 
 @#$#@#$#@
 GRAPHICS-WINDOW
@@ -868,7 +867,7 @@ SWITCH
 640
 allow-air-traffic
 allow-air-traffic
-1
+0
 1
 -1000
 
@@ -1200,6 +1199,11 @@ arrow
 true
 0
 Polygon -7500403 true true 150 0 0 150 105 150 105 293 195 293 195 150 300 150
+
+boat
+true
+0
+Polygon -7500403 true true 150 0 135 30 120 60 105 120 105 150 105 180 120 240 135 270 150 300 165 270 180 240 195 180 195 150 195 120 180 60 165 30
 
 box
 false

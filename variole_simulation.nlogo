@@ -414,7 +414,7 @@ to boats-setup
 end
 
 to boat-setup
-  set shape "fish"
+  set shape "boat"
   set color black
   set size 3
 
@@ -738,7 +738,6 @@ to waypoint-setup [waypointId x y neighborList]
   foreach neighbor-list [neighbor -> create-waterways-with other waypoints with [ id = neighbor] [ hide-link ]]
 end
 
-
 @#$#@#$#@
 GRAPHICS-WINDOW
 418
@@ -879,7 +878,7 @@ SWITCH
 603
 allow-water-traffic
 allow-water-traffic
-0
+1
 1
 -1000
 
@@ -1200,6 +1199,11 @@ arrow
 true
 0
 Polygon -7500403 true true 150 0 0 150 105 150 105 293 195 293 195 150 300 150
+
+boat
+true
+0
+Polygon -7500403 true true 150 0 135 30 120 60 105 120 105 150 105 180 120 240 135 270 150 300 165 270 180 240 195 180 195 150 195 120 180 60 165 30
 
 box
 false
