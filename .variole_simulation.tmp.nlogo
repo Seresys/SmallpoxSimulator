@@ -486,8 +486,6 @@ to boat-go
   let current-waypoint 0
   let distance-to-waypoint 0
   if length path = 1 [
-    move-to arrival
-    infect-arrival
     die
   ]
   if current-waypoint-index = length path - 1 [ set current-waypoint arrival ]
@@ -856,7 +854,7 @@ to waypoint-setup [waypointId x y neighborList]
   set id waypointId
   set label id
   set neighbor-list neighborList
-  ;;set hidden? true
+  ;set hidden? true
   foreach neighbor-list [neighbor -> create-waterways-with other waypoints with [ id = neighbor] [ hide-link ]]
 end
 @#$#@#$#@
@@ -1282,7 +1280,7 @@ The darker the color, the higher the percentage is
 PLOT
 493
 678
-1856
+955
 904
 Population evolution
 Number of tick
